@@ -3,7 +3,6 @@ package chestlock.chestlock;
 import chestlock.chestlock.persist.PersistInput;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,10 +12,10 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.MainHand;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static chestlock.chestlock.commands.CL.hasAdminPerms;
@@ -26,12 +25,17 @@ import static org.bukkit.Bukkit.getOfflinePlayer;
 
 public class CLListener implements Listener {
 
+    private static Map<Player, Long> lastClickTime = new HashMap<Player, Long>();
+
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
             if (clickedBlock!=null && Main.isLockable(clickedBlock.getType())) {
                 Player player = event.getPlayer();
                 List<UUID> uuids = PersistInput.getPlayerUUIDS(clickedBlock);
+
+                //long hi = lastClickTime.get(player);
+                //broadcastMessage(String.valueOf(hi));
 
                 if (event.getItem()!=null&&event.getItem().getType()==(Material.LEVER)&&event.getPlayer().isSneaking()) {
                     //do chest locking stuff
