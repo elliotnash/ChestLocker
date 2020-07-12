@@ -283,8 +283,9 @@ public class CL implements TabExecutor {
             if (hasAdminPerms(player)) {
                 Block block = player.getTargetBlock(10);
                 PersistentDataContainer container = player.getPersistentDataContainer();
-                if (container.has(BypassKey, PersistentDataType.INTEGER)) {
-                    if (container.get(BypassKey, PersistentDataType.INTEGER) == 0) {
+                Integer bypass = container.get(BypassKey, PersistentDataType.INTEGER);
+                if (bypass!=null) {
+                    if (bypass == 0) {
                         container.set(BypassKey, PersistentDataType.INTEGER, 1);
                         player.sendMessage(ChatColor.DARK_AQUA + "You are now bypassing chest protection");
                         return true;
@@ -294,8 +295,8 @@ public class CL implements TabExecutor {
                         return true;
                     }
                 } else {
-                    container.set(BypassKey, PersistentDataType.INTEGER, 0);
-                    player.sendMessage(ChatColor.DARK_AQUA + "You are no longer bypassing chest protection");
+                    container.set(BypassKey, PersistentDataType.INTEGER, 1);
+                    player.sendMessage(ChatColor.DARK_AQUA + "You are now bypassing chest protection");
                     return true;
                 }
             }
@@ -307,8 +308,9 @@ public class CL implements TabExecutor {
 
     public static boolean shouldBypass(Player player){
         PersistentDataContainer container = player.getPersistentDataContainer();
-        if (hasAdminPerms(player) && container.has(BypassKey, PersistentDataType.INTEGER)) {
-            if (container.get(BypassKey, PersistentDataType.INTEGER) == 1) {
+        if (hasAdminPerms(player)) {
+            Integer bypass = container.get(BypassKey, PersistentDataType.INTEGER);
+            if (bypass!=null && bypass == 1) {
                 player.sendMessage(ChatColor.DARK_PURPLE+"You are bypassing protection");
                 return true;
             } else {
