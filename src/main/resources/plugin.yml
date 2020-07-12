@@ -1,0 +1,14 @@
+name: ChestLock
+version: ${project.version}
+main: chestlock.chestlock.Main
+api-version: 1.13
+authors: [Elliot]
+description: Lock chests with a simple click
+commands:
+  cl:
+    description: add or remove a player from the chest you're looking at
+    usage: §5usage- <add || remove> [owner] <player>
+permissions:
+  chestlock.admin:
+    description: Permission to use bypass command
+    default: op
