@@ -5,6 +5,7 @@ import chestlock.chestlock.persist.PersistConvert;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.TileState;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -59,7 +60,6 @@ public class PersistInput {
         LinkedList<UUID> uuidList = PersistConvert.getPDE(blockToSet.getState(), UUIDKey);
         if (!uuidList.isEmpty()){
             if (!uuidList.contains(playerUUID)){
-                Bukkit.broadcastMessage("UUID has not been added");
                 uuidList.add(playerUUID);
                 PersistConvert.setPDE(blockToSet.getState(), UUIDKey, uuidList);
                 return true;
@@ -98,7 +98,7 @@ public class PersistInput {
         if (Main.canBeDouble(blockToRemove.getType()))
             blockToRemove = ((Chest) blockToRemove.getState()).getInventory().getLocation().getBlock();
 
-        LinkedList<UUID> uuidList = PersistConvert.getPDE(blockToRemove.getState(), UUIDKey);
+        LinkedList<UUID> uuidList = PersistConvert.getPDE(blockToRemove.getState(), OWNERKey);
         if (!uuidList.isEmpty()) {
             boolean removed = uuidList.remove(playerUUID);
             //Makes UUID[] and transfers all elements minus the one to remove
@@ -106,7 +106,7 @@ public class PersistInput {
                 return false;
             //If you've gotten this far, the player's UUID was on the array and is now removed
             //Put new array back in
-            PersistConvert.setPDE(blockToRemove.getState(), UUIDKey, uuidList);
+            PersistConvert.setPDE(blockToRemove.getState(), OWNERKey, uuidList);
             return true;
         }
         return false;
@@ -140,21 +140,23 @@ public class PersistInput {
         return container.has(UUIDKey, PersistentDataType.LONG_ARRAY);
     }
 
-    public static boolean unlockChest(Block blockToRemove){
+    public static void unlockChest(Block blockToRemove){
         //gets true block of double chests
         if (Main.canBeDouble(blockToRemove.getType()))
             blockToRemove = ((Chest) blockToRemove.getState()).getInventory().getLocation().getBlock();
         //updates block state because it's needed? idk seems to fix my pages upon pages of errors
         blockToRemove.getState().update();
         //gets data holder of block to add to
-        PersistentDataHolder dataHolder = (TileState) blockToRemove.getState(false);
+        TileState blockState = (TileState) blockToRemove.getState();
         //gets data container
-        PersistentDataContainer container = dataHolder.getPersistentDataContainer();
-        if (container.has(UUIDKey, PersistentDataType.LONG_ARRAY)){
+        PersistentDataContainer container = blockState.getPersistentDataContainer();
+        if (container.has(UUIDKey, PersistentDataType.LONG_ARRAY)) {
             container.remove(UUIDKey);
-            return true;
         }
-        return false;
+        if (container.has(OWNERKey, PersistentDataType.LONG_ARRAY)){
+            container.remove(OWNERKey);
+        }
+        blockState.update();
     }
 
     @SuppressWarnings("all")
