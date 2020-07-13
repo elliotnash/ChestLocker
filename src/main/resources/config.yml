@@ -1,1 +1,7 @@
-settings:
+# support for adding offline floodgate bedrock players to a chest if GeyserMC is installed
+# this does not use the api, so it will work with floodgate installed on just the proxy
+# only needs to be enabled if auth type is floodgate. if you set the geyser prefix to "" this will not work
+# if you don't know what geyser is, no need to touch this.
+geyserSupport: false
+# prefix used to detect if a player is bedrock. This needs to be set correctly else bedrock players will need to be online to be added to chests.
+geyserPrefix: "*"

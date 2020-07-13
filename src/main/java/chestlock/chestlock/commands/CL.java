@@ -6,6 +6,7 @@ import chestlock.chestlock.Main;
 import chestlock.chestlock.Vars;
 import chestlock.chestlock.persist.PersistConvert;
 import chestlock.chestlock.persist.PersistInput;
+import javafx.util.Pair;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -212,15 +213,62 @@ public class CL implements TabExecutor {
 
     }
 
+    @SuppressWarnings("all")
+    public static Pair<Boolean, OfflinePlayer> getBedrockOfflinePlayer(String playerName){
+        OfflinePlayer[] offlinePLayers = getOfflinePlayers();
+        for (OfflinePlayer player : offlinePLayers){
+            if (player.getName().equals(playerName)){
+                return new Pair<>(true, player);
+            }
+        }
+        return new Pair<>(false, null);
+    }
+
     public static void addPlayer(CommandSender sender, String targetName){
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
-            UUID playerTargetUUID = getPlayerUniqueId(targetName);
-            if (playerTargetUUID==null){
-                playerSender.sendMessage(ChatColor.RED+"Invalid player");
-                return;
+
+
+            UUID playerTargetUUID;
+            OfflinePlayer playerTarget;
+
+
+            if (Main.geyserPrefix==null) {
+
+                //runs if target is java player
+                playerTargetUUID = getPlayerUniqueId(targetName);
+                if (playerTargetUUID == null) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
+                if (!playerTarget.hasPlayedBefore()) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+            } else if (!targetName.startsWith(Main.geyserPrefix)) {
+                //runs if target is java player
+                playerTargetUUID = getPlayerUniqueId(targetName);
+                if (playerTargetUUID == null) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
+                if (!playerTarget.hasPlayedBefore()) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+            }else {
+                // runs if target player is bedrock to detect if the player is an offline player
+                Pair<Boolean, OfflinePlayer> bedrockPair = getBedrockOfflinePlayer(targetName);
+                if (bedrockPair.getKey()) {
+                    playerTarget = bedrockPair.getValue();
+                    playerTargetUUID = playerTarget.getUniqueId();
+                } else {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
             }
-            OfflinePlayer playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
             Block block = playerSender.getTargetBlock(10);
             if (block != null && Main.isLockable(block.getType())) {
                 if ((PersistInput.containsOwnerUUID(block, playerSender.getUniqueId()) || shouldBypass(playerSender))) {
@@ -248,12 +296,48 @@ public class CL implements TabExecutor {
     public static void addOwner(CommandSender sender, String targetName){
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
-            UUID playerTargetUUID = getPlayerUniqueId(targetName);
-            if (playerTargetUUID==null){
-                playerSender.sendMessage(ChatColor.RED+"Invalid player");
-                return;
+
+            UUID playerTargetUUID;
+            OfflinePlayer playerTarget;
+
+
+            if (Main.geyserPrefix==null) {
+
+                //runs if target is java player
+                playerTargetUUID = getPlayerUniqueId(targetName);
+                if (playerTargetUUID == null) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
+                if (!playerTarget.hasPlayedBefore()) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+            } else if (!targetName.startsWith(Main.geyserPrefix)) {
+                //runs if target is java player
+                playerTargetUUID = getPlayerUniqueId(targetName);
+                if (playerTargetUUID == null) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
+                if (!playerTarget.hasPlayedBefore()) {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
+            }else {
+                // runs if target player is bedrock to detect if the player is an offline player
+                Pair<Boolean, OfflinePlayer> bedrockPair = getBedrockOfflinePlayer(targetName);
+                if (bedrockPair.getKey()) {
+                    playerTarget = bedrockPair.getValue();
+                    playerTargetUUID = playerTarget.getUniqueId();
+                } else {
+                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
+                    return;
+                }
             }
-            OfflinePlayer playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
+
             Block block = playerSender.getTargetBlock(10);
             if (block != null && Main.isLockable(block.getType()) && (PersistInput.containsOwnerUUID(block, playerSender.getUniqueId()) || shouldBypass(playerSender))) {
                 //do chest locking stuff

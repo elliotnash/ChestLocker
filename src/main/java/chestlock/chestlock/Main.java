@@ -1,8 +1,11 @@
 package chestlock.chestlock;
 
 import chestlock.chestlock.commands.CL;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -15,25 +18,32 @@ import java.util.logging.Logger;
 public final class Main extends JavaPlugin {
 
     //TODO allow shulkers to keep uuids when in item form
-    //TODO add and remove commands (should be simple)
+    //TODO make tab complete show when you arent looking at a block
+    //TODO Don't return null when adding pl
 
-    private static Configuration config;
+    private static FileConfiguration config;
     private boolean disabled = false;
     private static Main plugin;
     private static Logger logger;
+    public static String geyserPrefix;
 
     @Override
     public void onEnable() {
         plugin = this;
         logger = getLogger();
 
-        loadConfig();
-        logger.info("Config initialized");
+        this.saveDefaultConfig();
+        config = this.getConfig();
+
 
         getServer().getPluginManager().registerEvents(new CLListener(), this);
 
         //Command initialization
         this.getCommand("cl").setExecutor(new CL());
+
+        if (config.getBoolean("geyserSupport"))
+            geyserPrefix = config.getString("geyserPrefix");
+
 
     }
 
@@ -46,27 +56,6 @@ public final class Main extends JavaPlugin {
 
     public static Main getPlugin(){
         return plugin;
-    }
-
-    public void loadConfig() {
-        // loadConfig config
-        if (!getDataFolder().exists())
-            getDataFolder().mkdir();
-
-        File file = new File(getDataFolder(), "config.yml");
-
-        if (!file.exists()) {
-            try (InputStream in = getResource("config.yml")) {
-                Files.copy(in, file.toPath());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public static boolean isLockable(Material mat){

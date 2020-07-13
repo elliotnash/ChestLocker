@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="floodgate-bukkit">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../../../../TESTSERVER/plugins/floodgate-bukkit.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
