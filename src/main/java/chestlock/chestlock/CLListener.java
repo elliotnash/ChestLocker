@@ -25,7 +25,7 @@ import static org.bukkit.Bukkit.getOfflinePlayer;
 
 public class CLListener implements Listener {
 
-    private static Map<Player, Long> lastClickTime = new HashMap<Player, Long>();
+    private static Map<Player, Long> lastClickTimeMap = new HashMap<Player, Long>();
 
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
@@ -34,57 +34,66 @@ public class CLListener implements Listener {
                 Player player = event.getPlayer();
                 List<UUID> uuids = PersistInput.getPlayerUUIDS(clickedBlock);
 
-                //long hi = lastClickTime.get(player);
-                //broadcastMessage(String.valueOf(hi));
+                Long lastClickTime = lastClickTimeMap.get(player);
+                boolean notRepeat = (lastClickTime==null||((System.currentTimeMillis()-lastClickTime)>50));
 
-                if (event.getItem()!=null&&event.getItem().getType()==(Material.LEVER)&&event.getPlayer().isSneaking()) {
+                lastClickTimeMap.put(player, System.currentTimeMillis());
+                if (event.getItem() != null && event.getItem().getType() == (Material.LEVER) && event.getPlayer().isSneaking()) {
                     //do chest locking stuff
-                    if (uuids.isEmpty()) {
-                        PersistInput.addOwnerUUID(clickedBlock, player.getUniqueId());
-                        player.sendMessage(ChatColor.AQUA + "Chest locked");
-                    } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId())) {
-                        PersistInput.unlockChest(clickedBlock);
-                        player.sendMessage(ChatColor.AQUA + "Chest unlocked");
-                    } else
-                        player.sendMessage(ChatColor.AQUA + "This chest is already locked");
+                    if (notRepeat) {
+                        if (uuids.isEmpty()) {
+                            PersistInput.addOwnerUUID(clickedBlock, player.getUniqueId());
+                            player.sendMessage(ChatColor.AQUA + "Chest locked");
+                        } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId())) {
+                            PersistInput.unlockChest(clickedBlock);
+                            player.sendMessage(ChatColor.AQUA + "Chest unlocked");
+                        } else
+                            player.sendMessage(ChatColor.RED + "This chest is already locked");
+                    }
                     event.setCancelled(true);
                     return;
                 }
-                if (event.getItem()!=null&&event.getItem().getType()==(Material.BONE)&&event.getPlayer().isSneaking()&&(PersistInput.containsUUID(clickedBlock, player.getUniqueId())||hasAdminPerms(event.getPlayer()))){
+                if (event.getItem() != null && event.getItem().getType() == (Material.BONE) && event.getPlayer().isSneaking() && (PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || hasAdminPerms(event.getPlayer()))) {
                     //Do send chest info stuff
                     if (!uuids.isEmpty()) {
                         //gets owners
-                        player.sendMessage(ChatColor.GOLD+"The following players are owners of this chest:");
-                        List<UUID> ownerUUID = PersistInput.getOwnerUUIDS(clickedBlock);
-                        for (UUID uuid : ownerUUID) {
-                            String name = getOfflinePlayer(uuid).getName();
-                            if (name!=null)
-                                player.sendMessage(ChatColor.LIGHT_PURPLE+name);
-                        }
+                        if (notRepeat) {
+                            player.sendMessage(ChatColor.GOLD + "The following players are owners of this chest:");
+                            List<UUID> ownerUUID = PersistInput.getOwnerUUIDS(clickedBlock);
+                            for (UUID uuid : ownerUUID) {
+                                String name = getOfflinePlayer(uuid).getName();
+                                if (name != null)
+                                    player.sendMessage(ChatColor.LIGHT_PURPLE + name);
+                            }
 
 
-                        //gets users
-                        player.sendMessage(ChatColor.GOLD+"The following players are allowed to open this chest:");
-                        for (UUID uuid : uuids) {
-                            String name = getOfflinePlayer(uuid).getName();
-                            if (name!=null)
-                                player.sendMessage(ChatColor.LIGHT_PURPLE+name);
+                            //gets users
+                            player.sendMessage(ChatColor.GOLD + "The following players are allowed to open this chest:");
+                            for (UUID uuid : uuids) {
+                                String name = getOfflinePlayer(uuid).getName();
+                                if (name != null)
+                                    player.sendMessage(ChatColor.LIGHT_PURPLE + name);
+                            }
                         }
                         event.setCancelled(true);
                     } else {
-                        if (event.getItem()!=null&&event.getItem().getType()==Material.BONE)
-                            player.sendMessage(ChatColor.DARK_PURPLE + "This chest isn't locked");
+                        if (event.getItem() != null && event.getItem().getType() == Material.BONE)
+                            if (notRepeat)
+                                player.sendMessage(ChatColor.DARK_PURPLE + "This chest isn't locked");
                     }
                 }
 
 
                 if (!uuids.isEmpty()&&(!player.isSneaking())) {
                     if (!(PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || shouldBypass(event.getPlayer()))) {
-                        player.sendMessage(ChatColor.RED + "Chest is locked!");
+                        if (notRepeat)
+                            player.sendMessage(ChatColor.RED + "Chest is locked!");
+
 
                         event.setCancelled(true);
                     }
                 }
+
         }
     }
     @EventHandler
