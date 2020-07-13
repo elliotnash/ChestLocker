@@ -19,7 +19,6 @@ public final class Main extends JavaPlugin {
 
     //TODO allow shulkers to keep uuids when in item form
     //TODO make tab complete show when you arent looking at a block
-    //TODO Don't return null when adding pl
 
     private static FileConfiguration config;
     private boolean disabled = false;
