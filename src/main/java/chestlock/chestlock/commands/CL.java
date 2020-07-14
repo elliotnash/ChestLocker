@@ -137,11 +137,15 @@ public class CL implements TabExecutor {
 
             Block block = playerSender.getTargetBlock(10);
             if (block != null && Main.isLockable(block.getType())) {
+                if (!PersistInput.isLocked(block)) {
                     if (PersistInput.addOwnerUUID(block, playerSender.getUniqueId())) {
                         playerSender.sendMessage(ChatColor.AQUA + "Chest locked");
                     } else {
-                        playerSender.sendMessage(ChatColor.RED + "This chest is already locked");
+                        playerSender.sendMessage(ChatColor.RED + "This chest is already locked!");
                     }
+                } else {
+                    playerSender.sendMessage(ChatColor.RED + "CThis chest is already locked!");
+                }
             } else {
                 playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block");
             }

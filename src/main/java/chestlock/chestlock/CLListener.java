@@ -44,7 +44,7 @@ public class CLListener implements Listener {
                         if (uuids.isEmpty()) {
                             PersistInput.addOwnerUUID(clickedBlock, player.getUniqueId());
                             player.sendMessage(ChatColor.AQUA + "Chest locked");
-                        } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId())) {
+                        } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId()) || shouldBypass(player)) {
                             PersistInput.unlockChest(clickedBlock);
                             player.sendMessage(ChatColor.AQUA + "Chest unlocked");
                         } else
