@@ -38,7 +38,7 @@ public class CLListener implements Listener {
                 boolean notRepeat = (lastClickTime==null||((System.currentTimeMillis()-lastClickTime)>50));
 
                 lastClickTimeMap.put(player, System.currentTimeMillis());
-                if (event.getItem() != null && event.getItem().getType() == (Material.LEVER) && event.getPlayer().isSneaking()) {
+                if (event.getItem() != null && event.getItem().getType() == (Material.AIR) && event.getPlayer().isSneaking()) {
                     //do chest locking stuff
                     if (notRepeat) {
                         if (uuids.isEmpty()) {
