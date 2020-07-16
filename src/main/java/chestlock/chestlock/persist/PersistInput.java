@@ -9,6 +9,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.TileState;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
@@ -130,20 +131,27 @@ public class PersistInput {
         return PersistConvert.getPDE(blockToSearch.getState(), OWNERKey);
     }
 
-    public static void setPlayerUUIDS(Block blockToSet, LinkedList<UUID> uuids){
+    public static LinkedList<UUID> getPlayerUUIDSState(BlockState blockToSearch){
         //gets true block of double chests
-        if (Main.canBeDouble(blockToSet.getType()))
-            blockToSet = ((Chest) blockToSet.getState()).getInventory().getLocation().getBlock();
+        if (Main.canBeDouble(blockToSearch.getType()))
+            blockToSearch = ((Chest) blockToSearch).getInventory().getLocation().getBlock().getState();
 
-        PersistConvert.setPDE(blockToSet.getState(), OWNERKey, uuids);
+        return PersistConvert.getPDE(blockToSearch, UUIDKey);
     }
 
-    public static void setOwnerUUIDS(Block blockToSet, LinkedList<UUID> uuids){
+    public static LinkedList<UUID> getOwnerUUIDSState(BlockState blockToSearch){
         //gets true block of double chests
-        if (Main.canBeDouble(blockToSet.getType()))
-            blockToSet = ((Chest) blockToSet.getState()).getInventory().getLocation().getBlock();
+        if (Main.canBeDouble(blockToSearch.getType()))
+            blockToSearch = ((Chest) blockToSearch).getInventory().getLocation().getBlock().getState();
 
-        PersistConvert.setPDE(blockToSet.getState(), OWNERKey, uuids);
+        return PersistConvert.getPDE(blockToSearch, OWNERKey);
+    }
+
+    public static void setUUIDS(BlockState blockToSet, LinkedList<UUID> ownerUUIDs, LinkedList<UUID> playerUUIDs){
+        for (UUID uuid : ownerUUIDs){
+        }
+        PersistConvert.setPDE(blockToSet, OWNERKey, ownerUUIDs);
+        PersistConvert.setPDE(blockToSet, UUIDKey, playerUUIDs);
     }
 
     public static boolean isLocked(Block blockToCheck) {
@@ -154,6 +162,16 @@ public class PersistInput {
         blockToCheck.getState().update();
         //gets data container
         PersistentDataContainer container = ((TileState) blockToCheck.getState(false)).getPersistentDataContainer();
+        return container.has(UUIDKey, PersistentDataType.LONG_ARRAY);
+    }
+    public static boolean isLockedState(BlockState blockToCheck) {
+        //gets true block of double chests
+        if (Main.canBeDouble(blockToCheck.getType()))
+            blockToCheck = ((Chest) blockToCheck).getInventory().getLocation().getBlock().getState();
+        //updates block state
+        blockToCheck.update();
+        //gets data container
+        PersistentDataContainer container = ((TileState) blockToCheck).getPersistentDataContainer();
         return container.has(UUIDKey, PersistentDataType.LONG_ARRAY);
     }
 
@@ -203,25 +221,38 @@ public class PersistInput {
         return false;
     }
 
-    public static void setShulkerOwnerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
-        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
-        container.set(OWNERKey, PersistConvert.uuidType, uuids);
+    public static ItemStack setShulkerOwnerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        itemMeta.getPersistentDataContainer().set(OWNERKey, PersistConvert.uuidType, uuids);
+        itemStack.setItemMeta(itemMeta);
+        return itemStack;
 
     }
 
-    public static void setShulkerPlayerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
-        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
-        container.set(UUIDKey, PersistConvert.uuidType, uuids);
+    public static ItemStack setShulkerPlayerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        itemMeta.getPersistentDataContainer().set(UUIDKey, PersistConvert.uuidType, uuids);
+        itemStack.setItemMeta(itemMeta);
+        return itemStack;
     }
 
     public static LinkedList<UUID> getShulkerOwnerPDC(ItemStack itemStack){
         PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
-        return container.get(OWNERKey, PersistConvert.uuidType);
+        LinkedList<UUID> uuids = container.get(OWNERKey, PersistConvert.uuidType);
+        if (uuids == null){
+            uuids = new LinkedList<>();
+        }
+
+        return uuids;
     }
 
     public static LinkedList<UUID> getShulkerPlayerPDC(ItemStack itemStack){
         PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
-        return container.get(UUIDKey, PersistConvert.uuidType);
+        LinkedList<UUID> uuids = container.get(UUIDKey, PersistConvert.uuidType);
+        if (uuids == null){
+            uuids = new LinkedList<>();
+        }
+        return uuids;
     }
 
 

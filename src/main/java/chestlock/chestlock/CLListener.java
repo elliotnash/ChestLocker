@@ -2,9 +2,12 @@ package chestlock.chestlock;
 
 import chestlock.chestlock.persist.PersistConvert;
 import chestlock.chestlock.persist.PersistInput;
+import io.papermc.lib.PaperLib;
+import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -41,7 +44,7 @@ public class CLListener implements Listener {
                 boolean notRepeat = (lastClickTime==null||((System.currentTimeMillis()-lastClickTime)>50));
 
                 lastClickTimeMap.put(player, System.currentTimeMillis());
-                if (event.getItem() != null && event.getItem().getType() == (Material.AIR) && event.getPlayer().isSneaking()) {
+                if (event.getItem() == null && event.getPlayer().isSneaking()) {
                     //do chest locking stuff
                     if (notRepeat) {
                         if (uuids.isEmpty()) {
@@ -149,21 +152,24 @@ public class CLListener implements Listener {
     //add meta data to shulker item on drop
     @EventHandler
     public void onItemDropEvent(BlockDropItemEvent event){
-        if (event.getBlock().getType()==Material.SHULKER_BOX){
-            if (PersistInput.isLocked(event.getBlock())) {
-                if (!(PersistInput.containsOwnerUUID(event.getBlock(), event.getPlayer().getUniqueId()) || shouldBypass(event.getPlayer()))) {
-                    event.setCancelled(true);
-                } else {
-                    //here is where we transfer meta data
-                    //gets uuids from shulker before broken\
-
-                    ItemStack itemStack = event.getItems().get(0).getItemStack();
-                    Block brokenBlock = event.getBlock();
-
-                    PersistInput.setShulkerOwnerPDC(itemStack, PersistInput.getOwnerUUIDS(brokenBlock));
-                    PersistInput.setShulkerPlayerPDC(itemStack, PersistInput.getPlayerUUIDS(brokenBlock));
+        BlockState brokenBlock = event.getBlockState();
+        if (brokenBlock.getType()==Material.SHULKER_BOX){
+            if (PersistInput.isLockedState(brokenBlock)) {
+                //here is where we transfer meta data
+                //gets uuids from shulker before broken
+                if (event.getItems().size()==1) {
+                    List<String> lore = new ArrayList<>(1);
+                    lore.add("locked");
+                    ItemStack toReturn =
+                            PersistInput.setShulkerPlayerPDC(
+                                    PersistInput.setShulkerOwnerPDC(event.getItems().get(0).getItemStack(),
+                                            PersistInput.getOwnerUUIDSState(brokenBlock)),
+                                    PersistInput.getPlayerUUIDSState(brokenBlock));
+                    toReturn.setLore(lore);
+                    event.getItems().get(0).setItemStack(toReturn);
                 }
             }
+
         }
     }
 
@@ -171,12 +177,13 @@ public class CLListener implements Listener {
     public void onBlockPlace (BlockPlaceEvent event){
         if (event.getBlock().getType()==Material.SHULKER_BOX){
             LinkedList<UUID> ownerList = PersistInput.getShulkerOwnerPDC(event.getItemInHand());
+            LinkedList<UUID> playerList = PersistInput.getShulkerPlayerPDC(event.getItemInHand());
             if (!ownerList.isEmpty()){
+                BlockStateSnapshotResult blockStateSnapshotResult = PaperLib.getBlockState(event.getBlockPlaced(), true);
                 //then do pdc transfer
-                Block blockPlaced = event.getBlock();
-                PersistInput.setOwnerUUIDS(blockPlaced, ownerList);
-                //Player pdc transfer
-                PersistInput.setPlayerUUIDS(blockPlaced, PersistInput.getShulkerPlayerPDC(event.getItemInHand()));
+
+
+                PersistInput.setUUIDS(blockStateSnapshotResult.getState(), ownerList, playerList);
             }
         }
     }
