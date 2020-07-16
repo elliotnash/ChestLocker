@@ -1,22 +1,25 @@
 package chestlock.chestlock;
 
+import chestlock.chestlock.persist.PersistConvert;
 import chestlock.chestlock.persist.PersistInput;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static chestlock.chestlock.commands.CL.hasAdminPerms;
 import static chestlock.chestlock.commands.CL.shouldBypass;
@@ -84,7 +87,7 @@ public class CLListener implements Listener {
                 }
 
 
-                if (!uuids.isEmpty()&&(!player.isSneaking())) {
+                if (!uuids.isEmpty()&&(!player.isSneaking())&&event.isBlockInHand()) {
                     if (!(PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || shouldBypass(event.getPlayer()))) {
                         if (notRepeat)
                             player.sendMessage(ChatColor.RED + "Chest is locked!");
@@ -141,6 +144,41 @@ public class CLListener implements Listener {
         if (Main.isLockable(block.getType()))
             return PersistInput.isLocked(block);
         return false;
+    }
+    
+    //add meta data to shulker item on drop
+    @EventHandler
+    public void onItemDropEvent(BlockDropItemEvent event){
+        if (event.getBlock().getType()==Material.SHULKER_BOX){
+            if (PersistInput.isLocked(event.getBlock())) {
+                if (!(PersistInput.containsOwnerUUID(event.getBlock(), event.getPlayer().getUniqueId()) || shouldBypass(event.getPlayer()))) {
+                    event.setCancelled(true);
+                } else {
+                    //here is where we transfer meta data
+                    //gets uuids from shulker before broken\
+
+                    ItemStack itemStack = event.getItems().get(0).getItemStack();
+                    Block brokenBlock = event.getBlock();
+
+                    PersistInput.setShulkerOwnerPDC(itemStack, PersistInput.getOwnerUUIDS(brokenBlock));
+                    PersistInput.setShulkerPlayerPDC(itemStack, PersistInput.getPlayerUUIDS(brokenBlock));
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBlockPlace (BlockPlaceEvent event){
+        if (event.getBlock().getType()==Material.SHULKER_BOX){
+            LinkedList<UUID> ownerList = PersistInput.getShulkerOwnerPDC(event.getItemInHand());
+            if (!ownerList.isEmpty()){
+                //then do pdc transfer
+                Block blockPlaced = event.getBlock();
+                PersistInput.setOwnerUUIDS(blockPlaced, ownerList);
+                //Player pdc transfer
+                PersistInput.setPlayerUUIDS(blockPlaced, PersistInput.getShulkerPlayerPDC(event.getItemInHand()));
+            }
+        }
     }
 
 

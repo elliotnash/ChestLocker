@@ -8,6 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.TileState;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
@@ -113,7 +114,7 @@ public class PersistInput {
 
     }
 
-    public static List<UUID> getPlayerUUIDS(Block blockToSearch){
+    public static LinkedList<UUID> getPlayerUUIDS(Block blockToSearch){
         //gets true block of double chests
         if (Main.canBeDouble(blockToSearch.getType()))
             blockToSearch = ((Chest) blockToSearch.getState()).getInventory().getLocation().getBlock();
@@ -121,12 +122,28 @@ public class PersistInput {
         return PersistConvert.getPDE(blockToSearch.getState(), UUIDKey);
     }
 
-    public static List<UUID> getOwnerUUIDS(Block blockToSearch){
+    public static LinkedList<UUID> getOwnerUUIDS(Block blockToSearch){
         //gets true block of double chests
         if (Main.canBeDouble(blockToSearch.getType()))
             blockToSearch = ((Chest) blockToSearch.getState()).getInventory().getLocation().getBlock();
 
         return PersistConvert.getPDE(blockToSearch.getState(), OWNERKey);
+    }
+
+    public static void setPlayerUUIDS(Block blockToSet, LinkedList<UUID> uuids){
+        //gets true block of double chests
+        if (Main.canBeDouble(blockToSet.getType()))
+            blockToSet = ((Chest) blockToSet.getState()).getInventory().getLocation().getBlock();
+
+        PersistConvert.setPDE(blockToSet.getState(), OWNERKey, uuids);
+    }
+
+    public static void setOwnerUUIDS(Block blockToSet, LinkedList<UUID> uuids){
+        //gets true block of double chests
+        if (Main.canBeDouble(blockToSet.getType()))
+            blockToSet = ((Chest) blockToSet.getState()).getInventory().getLocation().getBlock();
+
+        PersistConvert.setPDE(blockToSet.getState(), OWNERKey, uuids);
     }
 
     public static boolean isLocked(Block blockToCheck) {
@@ -186,44 +203,26 @@ public class PersistInput {
         return false;
     }
 
-    /*@SuppressWarnings({"unchecked", "InstantiatingObjectToGetClassObject"})
-    private static final Class<LinkedList<UUID>> uuidListType = (Class<LinkedList<UUID>>) new LinkedList<UUID>().getClass();
-    private static final PersistentDataType<long[], LinkedList<UUID>> uuidType = new PersistentDataType<long[], LinkedList<UUID>>() {
-        @Override
-        @NotNull
-        public Class<long[]> getPrimitiveType() {
-            return long[].class;
-        }
+    public static void setShulkerOwnerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
+        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
+        container.set(OWNERKey, PersistConvert.uuidType, uuids);
 
-        @Override
-        public @NotNull Class<LinkedList<UUID>> getComplexType() {
-            Bukkit.broadcastMessage("getComplexType");
-            return uuidListType;
-        }
+    }
 
+    public static void setShulkerPlayerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
+        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
+        container.set(UUIDKey, PersistConvert.uuidType, uuids);
+    }
 
-        @Override
-        public long @NotNull [] toPrimitive(@NotNull LinkedList<UUID> uuids, @NotNull PersistentDataAdapterContext context) {
-            long[] longs = new long[uuids.size()*2];
-            for (int i = 0;i < uuids.size();i++) {
-                longs[i * 2] = uuids.get(i).getMostSignificantBits();
-                longs[(i * 2) + 1] = uuids.get(i).getLeastSignificantBits();
-            }
+    public static LinkedList<UUID> getShulkerOwnerPDC(ItemStack itemStack){
+        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
+        return container.get(OWNERKey, PersistConvert.uuidType);
+    }
 
-            return longs;
-        }
-
-        @Override
-        public @NotNull LinkedList<UUID> fromPrimitive(long @NotNull [] primitive, @NotNull PersistentDataAdapterContext context) {
-            LinkedList<UUID> uuid = new LinkedList<>();
-            Bukkit.broadcastMessage(String.valueOf(primitive.length));
-
-            for (int i = 0;i < primitive.length;i+=2) {
-                uuid.add(new UUID(primitive[i], primitive[i+1]));
-            }
-            return uuid;
-        }
-    };*/
+    public static LinkedList<UUID> getShulkerPlayerPDC(ItemStack itemStack){
+        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
+        return container.get(UUIDKey, PersistConvert.uuidType);
+    }
 
 
 }

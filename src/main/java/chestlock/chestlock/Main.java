@@ -21,7 +21,6 @@ public final class Main extends JavaPlugin {
     //TODO make tab complete show when you arent looking at a block
 
     private static FileConfiguration config;
-    private boolean disabled = false;
     private static Main plugin;
     private static Logger logger;
     public static String geyserPrefix;

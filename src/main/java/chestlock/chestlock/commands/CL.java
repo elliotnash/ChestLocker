@@ -144,7 +144,7 @@ public class CL implements TabExecutor {
                         playerSender.sendMessage(ChatColor.RED + "This chest is already locked!");
                     }
                 } else {
-                    playerSender.sendMessage(ChatColor.RED + "CThis chest is already locked!");
+                    playerSender.sendMessage(ChatColor.RED + "This chest is already locked!");
                 }
             } else {
                 playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block");
