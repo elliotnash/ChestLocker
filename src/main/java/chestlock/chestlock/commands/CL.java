@@ -45,7 +45,8 @@ public class CL implements TabExecutor {
                 if (args[0].equalsIgnoreCase("bypass")) {
                     return BLANK;
                 }
-                if (args[0].equalsIgnoreCase("add")){
+                Block block = ((Player)sender).getTargetBlock(10);
+                if (args[0].equalsIgnoreCase("add")&&block!=null&&Main.isLockable(block.getType())&&(PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId()) || !PersistInput.isLocked(block))){
                     List<Player> players = (List<Player>) getOnlinePlayers();
                     List<String> playerNames = new LinkedList<>();
                     playerNames.add("owner");
@@ -54,7 +55,6 @@ public class CL implements TabExecutor {
                     }
                     return StringUtil.copyPartialMatches(args[1], playerNames, new ArrayList<>());
                 }
-                Block block = ((Player)sender).getTargetBlock(10);
                 if (args[0].equalsIgnoreCase("remove")&&block!=null&&Main.isLockable(block.getType())&&PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId())){
                     List<UUID> ownerUUIDS = PersistInput.getPlayerUUIDS(block);
                     List<String> playerNames = new LinkedList<>();
