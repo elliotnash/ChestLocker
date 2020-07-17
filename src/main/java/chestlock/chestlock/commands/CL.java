@@ -47,10 +47,9 @@ public class CL implements TabExecutor {
                 }
                 Block block = ((Player)sender).getTargetBlock(10);
                 if (args[0].equalsIgnoreCase("add")&&block!=null&&Main.isLockable(block.getType())&&(PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId()) || !PersistInput.isLocked(block))){
-                    List<Player> players = (List<Player>) getOnlinePlayers();
                     List<String> playerNames = new LinkedList<>();
                     playerNames.add("owner");
-                    for (Player player : players){
+                    for (OfflinePlayer player : getOfflinePlayers()){
                         playerNames.add(player.getName());
                     }
                     return StringUtil.copyPartialMatches(args[1], playerNames, new ArrayList<>());
@@ -66,15 +65,14 @@ public class CL implements TabExecutor {
                 }
             }
             if (args.length == 3){
-                if (args[1].equalsIgnoreCase("owner")&&args[0].equalsIgnoreCase("add")){
-                    List<Player> players = (List<Player>) getOnlinePlayers();
+                Block block = ((Player)sender).getTargetBlock(10);
+                if (args[1].equalsIgnoreCase("owner")&&args[0].equalsIgnoreCase("add")&&block!=null&&Main.isLockable(block.getType())&&(PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId()) || !PersistInput.isLocked(block))){
                     List<String> playerNames = new LinkedList<>();
-                    for (Player player : players){
+                    for (OfflinePlayer player : getOfflinePlayers()){
                         playerNames.add(player.getName());
                     }
                     return StringUtil.copyPartialMatches(args[2], playerNames, new ArrayList<>());
                 }
-                Block block = ((Player)sender).getTargetBlock(10);
                 if (args[1].equalsIgnoreCase("owner")&&block!=null&&Main.isLockable(block.getType())&&args[0].equalsIgnoreCase("remove")){
                     List<UUID> ownerUUIDS = PersistInput.getOwnerUUIDS(block);
                     if (ownerUUIDS.contains(((Player) sender).getUniqueId())) {
