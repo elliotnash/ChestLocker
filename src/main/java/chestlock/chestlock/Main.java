@@ -17,7 +17,6 @@ import java.util.logging.Logger;
 
 public final class Main extends JavaPlugin {
 
-    //TODO allow shulkers to keep uuids when in item form
     //TODO make tab complete show when you arent looking at a block
 
     private static FileConfiguration config;
