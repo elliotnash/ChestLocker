@@ -90,7 +90,7 @@ public class CLListener implements Listener {
                 }
 
 
-                if (!uuids.isEmpty()&&(!player.isSneaking())&&event.isBlockInHand()) {
+                if (!uuids.isEmpty()&&(!player.isSneaking())) {
                     if (!(PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || shouldBypass(event.getPlayer()))) {
                         if (notRepeat)
                             player.sendMessage(ChatColor.RED + "Chest is locked!");
