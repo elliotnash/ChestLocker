@@ -6,7 +6,7 @@
 
     <groupId>ChestLock</groupId>
     <artifactId>ChestLock</artifactId>
-    <version>1.2-BETA-4</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
     <name>ChestLock</name>
