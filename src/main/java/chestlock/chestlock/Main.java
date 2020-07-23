@@ -59,7 +59,6 @@ public final class Main extends JavaPlugin {
         return mat == Material.CHEST
                 || mat == Material.TRAPPED_CHEST
                 || mat == Material.BARREL
-                || mat == Material.SHULKER_BOX
                 || mat == Material.FURNACE
                 || mat == Material.DISPENSER
                 || mat == Material.SMOKER
@@ -68,7 +67,28 @@ public final class Main extends JavaPlugin {
                 || mat == Material.BREWING_STAND
                 || mat == Material.HOPPER
                 || mat == Material.BEACON
-                || mat == Material.ENDER_CHEST;
+                || mat == Material.ENDER_CHEST
+                || isShulker(mat);
+    }
+
+    public static boolean isShulker(Material mat){
+        return mat == Material.SHULKER_BOX
+                || mat == Material.BLACK_SHULKER_BOX
+                || mat == Material.BLUE_SHULKER_BOX
+                || mat == Material.BROWN_SHULKER_BOX
+                || mat == Material.CYAN_SHULKER_BOX
+                || mat == Material.GRAY_SHULKER_BOX
+                || mat == Material.GREEN_SHULKER_BOX
+                || mat == Material.LIGHT_BLUE_SHULKER_BOX
+                || mat == Material.LIGHT_GRAY_SHULKER_BOX
+                || mat == Material.LIME_SHULKER_BOX
+                || mat == Material.MAGENTA_SHULKER_BOX
+                || mat == Material.ORANGE_SHULKER_BOX
+                || mat == Material.PINK_SHULKER_BOX
+                || mat == Material.PURPLE_SHULKER_BOX
+                || mat == Material.RED_SHULKER_BOX
+                || mat == Material.WHITE_SHULKER_BOX
+                || mat == Material.YELLOW_SHULKER_BOX;
     }
 
     public static boolean canBeDouble(Material mat){
