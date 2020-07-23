@@ -153,7 +153,7 @@ public class CLListener implements Listener {
     @EventHandler
     public void onItemDropEvent(BlockDropItemEvent event){
         BlockState brokenBlock = event.getBlockState();
-        if (brokenBlock.getType()==Material.SHULKER_BOX){
+        if (Main.isShulker(brokenBlock.getType())){
             if (PersistInput.isLockedState(brokenBlock)) {
                 //here is where we transfer meta data
                 //gets uuids from shulker before broken
@@ -175,7 +175,7 @@ public class CLListener implements Listener {
 
     @EventHandler
     public void onBlockPlace (BlockPlaceEvent event){
-        if (event.getBlock().getType()==Material.SHULKER_BOX){
+        if (Main.isShulker(event.getBlock().getType())){
             LinkedList<UUID> ownerList = PersistInput.getShulkerOwnerPDC(event.getItemInHand());
             LinkedList<UUID> playerList = PersistInput.getShulkerPlayerPDC(event.getItemInHand());
             if (!ownerList.isEmpty()){
