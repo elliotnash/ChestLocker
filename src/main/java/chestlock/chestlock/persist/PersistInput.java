@@ -174,6 +174,14 @@ public class PersistInput {
         PersistentDataContainer container = ((TileState) blockToCheck).getPersistentDataContainer();
         return container.has(UUIDKey, PersistentDataType.LONG_ARRAY);
     }
+    public static boolean isLockedStateNoUpdate(BlockState blockToCheck) {
+        //gets true block of double chests
+        if (Main.canBeDouble(blockToCheck.getType()))
+            blockToCheck = ((Chest) blockToCheck).getInventory().getLocation().getBlock().getState();
+        //gets data container
+        PersistentDataContainer container = ((TileState) blockToCheck).getPersistentDataContainer();
+        return container.has(UUIDKey, PersistentDataType.LONG_ARRAY);
+    }
 
     public static void unlockChest(Block blockToRemove){
         //gets true block of double chests

@@ -5,11 +5,16 @@ import chestlock.chestlock.persist.PersistInput;
 import io.papermc.lib.PaperLib;
 import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -17,8 +22,10 @@ import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
@@ -148,7 +155,7 @@ public class CLListener implements Listener {
             return PersistInput.isLocked(block);
         return false;
     }
-    
+
     //add meta data to shulker item on drop
     @EventHandler
     public void onItemDropEvent(BlockDropItemEvent event){
@@ -170,6 +177,21 @@ public class CLListener implements Listener {
                 }
             }
 
+        }
+    }
+
+    @EventHandler
+    public void InventoryMoveItem(InventoryMoveItemEvent event) {
+        if (event.getDestination().getHolder() instanceof HopperMinecart){
+            Location loc = event.getSource().getLocation();
+            if (loc == null)
+                return;
+            Block lockedBlock = loc.getBlock();
+            if (Main.isLockable(lockedBlock.getType())){
+                if (PersistInput.isLockedStateNoUpdate(lockedBlock.getState(true))) {
+                    event.setCancelled(true);
+                }
+            }
         }
     }
 
