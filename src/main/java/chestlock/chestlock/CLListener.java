@@ -1,21 +1,14 @@
 package chestlock.chestlock;
 
-import chestlock.chestlock.persist.PersistConvert;
 import chestlock.chestlock.persist.PersistInput;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.papermc.lib.PaperLib;
 import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
@@ -28,28 +21,48 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.entity.EntityType;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 import static chestlock.chestlock.commands.CL.hasAdminPerms;
 import static chestlock.chestlock.commands.CL.shouldBypass;
-import static org.bukkit.Bukkit.broadcastMessage;
 import static org.bukkit.Bukkit.getOfflinePlayer;
 
+@SuppressWarnings("unchecked")
 public class CLListener implements Listener {
 
-    private static HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
-
+    private HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
+    public HashMap<String, HashMap<String, HashMap<String, LinkedList<String>>>> chestMap = new HashMap<>();
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    public void writeHash(){
-        try (FileWriter file = new FileWriter(Main.getPlugin().getDataFolder().getPath()+"/chests.json")) {
+    {
+        for (World world : Bukkit.getWorlds()) {
+            try (FileReader reader = new FileReader(world.getName()+"/chest.locks")) {
+                chestMap.put(world.getName(), gson.fromJson(reader, HashMap.class));
 
-            file.write(gson.toJson(Main.chestMap));
+            } catch (FileNotFoundException ignored) {
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public void writeHash(String worldName){
+
+        if (!chestMap.containsKey(worldName)){
+            return;
+        }
+        HashMap<String, HashMap<String, LinkedList<String>>> worldMap = chestMap.get(worldName);
+
+        try (FileWriter file = new FileWriter(worldName+"/chest.locks")) {
+
+            file.write(gson.toJson(worldMap));
 
         } catch (Exception e){
             e.printStackTrace();
@@ -59,93 +72,106 @@ public class CLListener implements Listener {
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
-            if (clickedBlock!=null && Main.isLockable(clickedBlock.getType())) {
+        if (clickedBlock!=null && Main.isLockable(clickedBlock.getType())) {
 
-                //Code bellow this is to convert to json file
+            Player player = event.getPlayer();
+            List<UUID> uuids = PersistInput.getPlayerUUIDS(clickedBlock);
 
-                Block newBlock = clickedBlock;
-                if (Main.canBeDouble(clickedBlock.getType()))
-                    newBlock = ((Chest) clickedBlock.getState()).getInventory().getLocation().getBlock();
+            Long lastClickTime = lastClickTimeMap.get(player);
+            boolean notRepeat = (lastClickTime==null||((System.currentTimeMillis()-lastClickTime)>50));
+
+            lastClickTimeMap.put(player, System.currentTimeMillis());
+            if (event.getItem() == null && event.getPlayer().isSneaking()) {
+                //do chest locking stuff
+                if (notRepeat) {
+                    if (uuids.isEmpty()) {
+                        PersistInput.addOwnerUUID(clickedBlock, player.getUniqueId());
+                        player.sendMessage(ChatColor.AQUA + "Chest locked");
+                    } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId()) || shouldBypass(player)) {
+                        PersistInput.unlockChest(clickedBlock);
+                        player.sendMessage(ChatColor.AQUA + "Chest unlocked");
+                    } else
+                        player.sendMessage(ChatColor.RED + "This chest is already locked");
+                }
+                event.setCancelled(true);
+                return;
+            }
+            if (event.getItem() != null && event.getItem().getType() == (Material.BONE) && event.getPlayer().isSneaking() && (PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || hasAdminPerms(event.getPlayer()))) {
+                //Do send chest info stuff
+                if (!uuids.isEmpty()) {
+                    //gets owners
+                    if (notRepeat) {
+                        player.sendMessage(ChatColor.GOLD + "The following players are owners of this chest:");
+                        List<UUID> ownerUUID = PersistInput.getOwnerUUIDS(clickedBlock);
+                        for (UUID uuid : ownerUUID) {
+                            String name = getOfflinePlayer(uuid).getName();
+                            if (name != null)
+                                player.sendMessage(ChatColor.LIGHT_PURPLE + name);
+                        }
+
+
+                        //gets users
+                        player.sendMessage(ChatColor.GOLD + "The following players are allowed to open this chest:");
+                        for (UUID uuid : uuids) {
+                            String name = getOfflinePlayer(uuid).getName();
+                            if (name != null)
+                                player.sendMessage(ChatColor.LIGHT_PURPLE + name);
+                        }
+                    }
+                    event.setCancelled(true);
+                } else {
+                    if (event.getItem() != null && event.getItem().getType() == Material.BONE)
+                        if (notRepeat)
+                            player.sendMessage(ChatColor.DARK_PURPLE + "This chest isn't locked");
+                }
+
+            }
+
+
+            if (!uuids.isEmpty()&&(!player.isSneaking())) {
+                if (!(PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || shouldBypass(event.getPlayer()))) {
+                    if (notRepeat)
+                        player.sendMessage(ChatColor.RED + "Chest is locked!");
+
+
+                    event.setCancelled(true);
+                }
+            }
+
+            //Code bellow this is to convert to json file
+
+            Block newBlock = clickedBlock;
+            if (Main.canBeDouble(clickedBlock.getType()))
+                newBlock = ((Chest) clickedBlock.getState()).getInventory().getLocation().getBlock();
+
+            HashMap<String, HashMap<String, LinkedList<String>>> worldMap;
+            if (chestMap.containsKey(newBlock.getWorld().getName())){
+                worldMap = chestMap.get(newBlock.getWorld().getName());
+            } else {
+                worldMap = new HashMap<>();
+            }
+
+
+            if (PersistInput.isLocked(newBlock)) {
 
                 LinkedList<String> ownerUuid = new LinkedList<>();
-                for (UUID uuid : PersistInput.getOwnerUUIDS(newBlock)){
+                for (UUID uuid : PersistInput.getOwnerUUIDS(newBlock)) {
                     ownerUuid.add(uuid.toString());
                 }
                 LinkedList<String> playerUuid = new LinkedList<>();
-                for (UUID uuid : PersistInput.getPlayerUUIDS(newBlock)){
+                for (UUID uuid : PersistInput.getPlayerUUIDS(newBlock)) {
                     playerUuid.add(uuid.toString());
                 }
                 HashMap<String, LinkedList<String>> pMap = new HashMap<>();
                 pMap.put("owner", ownerUuid);
                 pMap.put("player", playerUuid);
 
-                Main.chestMap.put(newBlock.getLocation().toString(), pMap);
-                writeHash();
+                worldMap.put(newBlock.getLocation().toString(), pMap);
+            } else worldMap.remove(newBlock.getLocation().toString());
+            chestMap.put(newBlock.getWorld().getName(), worldMap);
+            writeHash(newBlock.getWorld().getName());
 
-                //End of json converter
-
-                Player player = event.getPlayer();
-                List<UUID> uuids = PersistInput.getPlayerUUIDS(clickedBlock);
-
-                Long lastClickTime = lastClickTimeMap.get(player);
-                boolean notRepeat = (lastClickTime==null||((System.currentTimeMillis()-lastClickTime)>50));
-
-                lastClickTimeMap.put(player, System.currentTimeMillis());
-                if (event.getItem() == null && event.getPlayer().isSneaking()) {
-                    //do chest locking stuff
-                    if (notRepeat) {
-                        if (uuids.isEmpty()) {
-                            PersistInput.addOwnerUUID(clickedBlock, player.getUniqueId());
-                            player.sendMessage(ChatColor.AQUA + "Chest locked");
-                        } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId()) || shouldBypass(player)) {
-                            PersistInput.unlockChest(clickedBlock);
-                            player.sendMessage(ChatColor.AQUA + "Chest unlocked");
-                        } else
-                            player.sendMessage(ChatColor.RED + "This chest is already locked");
-                    }
-                    event.setCancelled(true);
-                    return;
-                }
-                if (event.getItem() != null && event.getItem().getType() == (Material.BONE) && event.getPlayer().isSneaking() && (PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || hasAdminPerms(event.getPlayer()))) {
-                    //Do send chest info stuff
-                    if (!uuids.isEmpty()) {
-                        //gets owners
-                        if (notRepeat) {
-                            player.sendMessage(ChatColor.GOLD + "The following players are owners of this chest:");
-                            List<UUID> ownerUUID = PersistInput.getOwnerUUIDS(clickedBlock);
-                            for (UUID uuid : ownerUUID) {
-                                String name = getOfflinePlayer(uuid).getName();
-                                if (name != null)
-                                    player.sendMessage(ChatColor.LIGHT_PURPLE + name);
-                            }
-
-
-                            //gets users
-                            player.sendMessage(ChatColor.GOLD + "The following players are allowed to open this chest:");
-                            for (UUID uuid : uuids) {
-                                String name = getOfflinePlayer(uuid).getName();
-                                if (name != null)
-                                    player.sendMessage(ChatColor.LIGHT_PURPLE + name);
-                            }
-                        }
-                        event.setCancelled(true);
-                    } else {
-                        if (event.getItem() != null && event.getItem().getType() == Material.BONE)
-                            if (notRepeat)
-                                player.sendMessage(ChatColor.DARK_PURPLE + "This chest isn't locked");
-                    }
-                }
-
-
-                if (!uuids.isEmpty()&&(!player.isSneaking())) {
-                    if (!(PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || shouldBypass(event.getPlayer()))) {
-                        if (notRepeat)
-                            player.sendMessage(ChatColor.RED + "Chest is locked!");
-
-
-                        event.setCancelled(true);
-                    }
-                }
+            //End of json converter
 
         }
     }
@@ -174,6 +200,24 @@ public class CLListener implements Listener {
                     event.setCancelled(true);
                 }
             }
+
+            //Convert
+            Block newBlock = event.getBlock();
+            if (Main.canBeDouble(event.getBlock().getType()))
+                newBlock = ((Chest) event.getBlock().getState()).getInventory().getLocation().getBlock();
+            if (newBlock.getLocation().toString().equals(event.getBlock().getLocation().toString())) {
+                HashMap<String, HashMap<String, LinkedList<String>>> worldMap;
+                if (chestMap.containsKey(newBlock.getWorld().getName())){
+                    worldMap = chestMap.get(newBlock.getWorld().getName());
+                } else {
+                    worldMap = new HashMap<>();
+                }
+                worldMap.remove(newBlock.getLocation().toString());
+                chestMap.put(newBlock.getWorld().getName(), worldMap);
+                writeHash(newBlock.getWorld().getName());
+            }
+            //end
+
         }
     }
     @EventHandler

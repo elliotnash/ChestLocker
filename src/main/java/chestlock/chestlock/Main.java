@@ -25,9 +25,6 @@ public final class Main extends JavaPlugin {
     private static Main plugin;
     private static Logger logger;
     public static String geyserPrefix;
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-    public static HashMap<String, HashMap<String, LinkedList<String>>> chestMap = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -48,15 +45,7 @@ public final class Main extends JavaPlugin {
 
         //Convert json bellow
 
-        try (FileReader reader = new FileReader(getDataFolder().getPath()+"/chests.json"))
-        {
-            Main.chestMap = gson.fromJson(reader, HashMap.class);
 
-        } catch (FileNotFoundException e){
-            logger.warning("Chest data file not found (chests.json), will create new one");
-        } catch (IOException e){
-            e.printStackTrace();
-        }
 
         //no convert anymore
 
