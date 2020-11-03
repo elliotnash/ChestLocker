@@ -1,6 +1,8 @@
 package chestlock.chestlock;
 
 import chestlock.chestlock.commands.CL;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -9,10 +11,10 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.logging.Logger;
 
 public final class Main extends JavaPlugin {
@@ -23,6 +25,9 @@ public final class Main extends JavaPlugin {
     private static Main plugin;
     private static Logger logger;
     public static String geyserPrefix;
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    public static HashMap<String, HashMap<String, LinkedList<String>>> chestMap = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -40,6 +45,20 @@ public final class Main extends JavaPlugin {
 
         if (config.getBoolean("geyserSupport"))
             geyserPrefix = config.getString("geyserPrefix");
+
+        //Convert json bellow
+
+        try (FileReader reader = new FileReader(getDataFolder().getPath()+"/chests.json"))
+        {
+            Main.chestMap = gson.fromJson(reader, HashMap.class);
+
+        } catch (FileNotFoundException e){
+            logger.warning("Chest data file not found (chests.json), will create new one");
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+        //no convert anymore
 
 
     }

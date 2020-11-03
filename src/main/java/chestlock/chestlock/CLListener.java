@@ -2,6 +2,8 @@ package chestlock.chestlock;
 
 import chestlock.chestlock.persist.PersistConvert;
 import chestlock.chestlock.persist.PersistInput;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.papermc.lib.PaperLib;
 import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
 import org.bukkit.ChatColor;
@@ -9,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -29,6 +32,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
+import java.io.FileWriter;
 import java.util.*;
 
 import static chestlock.chestlock.commands.CL.hasAdminPerms;
@@ -38,12 +42,48 @@ import static org.bukkit.Bukkit.getOfflinePlayer;
 
 public class CLListener implements Listener {
 
-    private static Map<Player, Long> lastClickTimeMap = new HashMap<Player, Long>();
+    private static HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
+
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    public void writeHash(){
+        try (FileWriter file = new FileWriter(Main.getPlugin().getDataFolder().getPath()+"/chests.json")) {
+
+            file.write(gson.toJson(Main.chestMap));
+
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
             if (clickedBlock!=null && Main.isLockable(clickedBlock.getType())) {
+
+                //Code bellow this is to convert to json file
+
+                Block newBlock = clickedBlock;
+                if (Main.canBeDouble(clickedBlock.getType()))
+                    newBlock = ((Chest) clickedBlock.getState()).getInventory().getLocation().getBlock();
+
+                LinkedList<String> ownerUuid = new LinkedList<>();
+                for (UUID uuid : PersistInput.getOwnerUUIDS(newBlock)){
+                    ownerUuid.add(uuid.toString());
+                }
+                LinkedList<String> playerUuid = new LinkedList<>();
+                for (UUID uuid : PersistInput.getPlayerUUIDS(newBlock)){
+                    playerUuid.add(uuid.toString());
+                }
+                HashMap<String, LinkedList<String>> pMap = new HashMap<>();
+                pMap.put("owner", ownerUuid);
+                pMap.put("player", playerUuid);
+
+                Main.chestMap.put(newBlock.getLocation().toString(), pMap);
+                writeHash();
+
+                //End of json converter
+
                 Player player = event.getPlayer();
                 List<UUID> uuids = PersistInput.getPlayerUUIDS(clickedBlock);
 
