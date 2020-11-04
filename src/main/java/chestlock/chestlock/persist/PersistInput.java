@@ -229,40 +229,6 @@ public class PersistInput {
         return false;
     }
 
-    public static ItemStack setShulkerOwnerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.getPersistentDataContainer().set(OWNERKey, PersistConvert.uuidType, uuids);
-        itemStack.setItemMeta(itemMeta);
-        return itemStack;
-
-    }
-
-    public static ItemStack setShulkerPlayerPDC(ItemStack itemStack, LinkedList<UUID> uuids){
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.getPersistentDataContainer().set(UUIDKey, PersistConvert.uuidType, uuids);
-        itemStack.setItemMeta(itemMeta);
-        return itemStack;
-    }
-
-    public static LinkedList<UUID> getShulkerOwnerPDC(ItemStack itemStack){
-        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
-        LinkedList<UUID> uuids = container.get(OWNERKey, PersistConvert.uuidType);
-        if (uuids == null){
-            uuids = new LinkedList<>();
-        }
-
-        return uuids;
-    }
-
-    public static LinkedList<UUID> getShulkerPlayerPDC(ItemStack itemStack){
-        PersistentDataContainer container = itemStack.getItemMeta().getPersistentDataContainer();
-        LinkedList<UUID> uuids = container.get(UUIDKey, PersistConvert.uuidType);
-        if (uuids == null){
-            uuids = new LinkedList<>();
-        }
-        return uuids;
-    }
-
 
 }
 

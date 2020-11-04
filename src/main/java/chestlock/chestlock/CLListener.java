@@ -1,5 +1,6 @@
 package chestlock.chestlock;
 
+import chestlock.chestlock.cache.ChestMap;
 import chestlock.chestlock.persist.PersistInput;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -36,38 +37,7 @@ import static org.bukkit.Bukkit.getOfflinePlayer;
 public class CLListener implements Listener {
 
     private HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
-    public HashMap<String, HashMap<String, HashMap<String, LinkedList<String>>>> chestMap = new HashMap<>();
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-    {
-        for (World world : Bukkit.getWorlds()) {
-            try (FileReader reader = new FileReader(world.getName()+"/chest.locks")) {
-                chestMap.put(world.getName(), gson.fromJson(reader, HashMap.class));
-
-            } catch (FileNotFoundException ignored) {
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-    public void writeHash(String worldName){
-
-        if (!chestMap.containsKey(worldName)){
-            return;
-        }
-        HashMap<String, HashMap<String, LinkedList<String>>> worldMap = chestMap.get(worldName);
-
-        try (FileWriter file = new FileWriter(worldName+"/chest.locks")) {
-
-            file.write(gson.toJson(worldMap));
-
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }
+    public ChestMap chestMap = new ChestMap();
 
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
@@ -144,14 +114,6 @@ public class CLListener implements Listener {
             if (Main.canBeDouble(clickedBlock.getType()))
                 newBlock = ((Chest) clickedBlock.getState()).getInventory().getLocation().getBlock();
 
-            HashMap<String, HashMap<String, LinkedList<String>>> worldMap;
-            if (chestMap.containsKey(newBlock.getWorld().getName())){
-                worldMap = chestMap.get(newBlock.getWorld().getName());
-            } else {
-                worldMap = new HashMap<>();
-            }
-
-
             if (PersistInput.isLocked(newBlock)) {
 
                 LinkedList<String> ownerUuid = new LinkedList<>();
@@ -166,11 +128,8 @@ public class CLListener implements Listener {
                 pMap.put("owner", ownerUuid);
                 pMap.put("player", playerUuid);
 
-                worldMap.put(newBlock.getLocation().toString(), pMap);
-            } else worldMap.remove(newBlock.getLocation().toString());
-            chestMap.put(newBlock.getWorld().getName(), worldMap);
-            writeHash(newBlock.getWorld().getName());
-
+                chestMap.setChest(newBlock.getWorld().getName(), chestMap.getXYZ(newBlock.getLocation()), pMap);
+            } else chestMap.removeChest(newBlock.getWorld().getName(), chestMap.getXYZ(newBlock.getLocation()));
             //End of json converter
 
         }
@@ -205,16 +164,10 @@ public class CLListener implements Listener {
             Block newBlock = event.getBlock();
             if (Main.canBeDouble(event.getBlock().getType()))
                 newBlock = ((Chest) event.getBlock().getState()).getInventory().getLocation().getBlock();
+
             if (newBlock.getLocation().toString().equals(event.getBlock().getLocation().toString())) {
-                HashMap<String, HashMap<String, LinkedList<String>>> worldMap;
-                if (chestMap.containsKey(newBlock.getWorld().getName())){
-                    worldMap = chestMap.get(newBlock.getWorld().getName());
-                } else {
-                    worldMap = new HashMap<>();
-                }
-                worldMap.remove(newBlock.getLocation().toString());
-                chestMap.put(newBlock.getWorld().getName(), worldMap);
-                writeHash(newBlock.getWorld().getName());
+
+                chestMap.removeChest(newBlock.getWorld().getName(), chestMap.getXYZ(newBlock.getLocation()));
             }
             //end
 
@@ -240,28 +193,9 @@ public class CLListener implements Listener {
         return false;
     }
 
-    //add meta data to shulker item on drop
     @EventHandler
     public void onItemDropEvent(BlockDropItemEvent event){
-        BlockState brokenBlock = event.getBlockState();
-        if (Main.isShulker(brokenBlock.getType())){
-            if (PersistInput.isLockedState(brokenBlock)) {
-                //here is where we transfer meta data
-                //gets uuids from shulker before broken
-                if (event.getItems().size()==1) {
-                    List<String> lore = new ArrayList<>(1);
-                    lore.add("locked");
-                    ItemStack toReturn =
-                            PersistInput.setShulkerPlayerPDC(
-                                    PersistInput.setShulkerOwnerPDC(event.getItems().get(0).getItemStack(),
-                                            PersistInput.getOwnerUUIDSState(brokenBlock)),
-                                    PersistInput.getPlayerUUIDSState(brokenBlock));
-                    toReturn.setLore(lore);
-                    event.getItems().get(0).setItemStack(toReturn);
-                }
-            }
 
-        }
     }
 
     @EventHandler
@@ -281,17 +215,7 @@ public class CLListener implements Listener {
 
     @EventHandler
     public void onBlockPlace (BlockPlaceEvent event){
-        if (Main.isShulker(event.getBlock().getType())){
-            LinkedList<UUID> ownerList = PersistInput.getShulkerOwnerPDC(event.getItemInHand());
-            LinkedList<UUID> playerList = PersistInput.getShulkerPlayerPDC(event.getItemInHand());
-            if (!ownerList.isEmpty()){
-                BlockStateSnapshotResult blockStateSnapshotResult = PaperLib.getBlockState(event.getBlockPlaced(), true);
-                //then do pdc transfer
 
-
-                PersistInput.setUUIDS(blockStateSnapshotResult.getState(), ownerList, playerList);
-            }
-        }
     }
 
 
