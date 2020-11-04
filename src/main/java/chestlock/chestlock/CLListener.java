@@ -21,6 +21,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.FileNotFoundException;
@@ -38,6 +39,13 @@ public class CLListener implements Listener {
 
     private HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
     public ChestMap chestMap = new ChestMap();
+
+    //json stuff
+    @EventHandler
+    public void OnChunkLoad(ChunkLoadEvent event){
+        event.getChunk();
+    }
+    //json stuff done
 
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
