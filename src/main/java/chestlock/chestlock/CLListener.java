@@ -22,6 +22,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.FileNotFoundException;
@@ -34,7 +35,6 @@ import static chestlock.chestlock.commands.CL.hasAdminPerms;
 import static chestlock.chestlock.commands.CL.shouldBypass;
 import static org.bukkit.Bukkit.getOfflinePlayer;
 
-@SuppressWarnings("unchecked")
 public class CLListener implements Listener {
 
     private HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
@@ -43,7 +43,24 @@ public class CLListener implements Listener {
     //json stuff
     @EventHandler
     public void OnChunkLoad(ChunkLoadEvent event){
-        event.getChunk();
+        for (BlockState blockState : event.getChunk().getTileEntities()){
+            Block block = blockState.getBlock();
+            if (PersistInput.isLocked(block)) {
+                LinkedList<String> ownerUuid = new LinkedList<>();
+                for (UUID uuid : PersistInput.getOwnerUUIDS(block)) {
+                    ownerUuid.add(uuid.toString());
+                }
+                LinkedList<String> playerUuid = new LinkedList<>();
+                for (UUID uuid : PersistInput.getPlayerUUIDS(block)) {
+                    playerUuid.add(uuid.toString());
+                }
+                HashMap<String, LinkedList<String>> pMap = new HashMap<>();
+                pMap.put("owner", ownerUuid);
+                pMap.put("player", playerUuid);
+
+                chestMap.setChest(block.getWorld().getName(), chestMap.getXYZ(block.getLocation()), pMap);
+            }
+        }
     }
     //json stuff done
 

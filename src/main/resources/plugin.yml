@@ -4,6 +4,7 @@ main: chestlock.chestlock.Main
 api-version: 1.13
 authors: [Elliot]
 description: Lock chests with a simple click
+load: STARTUP
 commands:
   cl:
     description: add or remove a player from the chest you're looking at
