@@ -37,6 +37,8 @@ public class chestManager {
         for (World world : Bukkit.getWorlds()) {
             try (FileReader reader = new FileReader(world.getName()+"/chest.locks")) {
                 HashMap<String, HashMap<String, LinkedList<String>>> tempMap = gson.fromJson(reader, hashType);
+                if (tempMap == null)
+                    tempMap = new HashMap<>();
                 chestMap.put(world.getName(), tempMap);
 
             } catch (FileNotFoundException ignored) {
