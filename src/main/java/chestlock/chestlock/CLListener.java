@@ -1,15 +1,10 @@
 package chestlock.chestlock;
 
-import chestlock.chestlock.cache.ChestMap;
-import chestlock.chestlock.persist.PersistInput;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import io.papermc.lib.PaperLib;
-import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
+import chestlock.chestlock.data.Perms;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
@@ -21,14 +16,10 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
-import org.bukkit.event.world.WorldLoadEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.DoubleChestInventory;
+import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 
 import static chestlock.chestlock.commands.CL.hasAdminPerms;
@@ -37,40 +28,17 @@ import static org.bukkit.Bukkit.getOfflinePlayer;
 
 public class CLListener implements Listener {
 
-    private HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
-    public ChestMap chestMap = new ChestMap();
+    private final HashMap<Player, Long> lastClickTimeMap = new HashMap<>();
 
-    //json stuff
-    @EventHandler
-    public void OnChunkLoad(ChunkLoadEvent event){
-        for (BlockState blockState : event.getChunk().getTileEntities()){
-            Block block = blockState.getBlock();
-            if (PersistInput.isLocked(block)) {
-                LinkedList<String> ownerUuid = new LinkedList<>();
-                for (UUID uuid : PersistInput.getOwnerUUIDS(block)) {
-                    ownerUuid.add(uuid.toString());
-                }
-                LinkedList<String> playerUuid = new LinkedList<>();
-                for (UUID uuid : PersistInput.getPlayerUUIDS(block)) {
-                    playerUuid.add(uuid.toString());
-                }
-                HashMap<String, LinkedList<String>> pMap = new HashMap<>();
-                pMap.put("owner", ownerUuid);
-                pMap.put("player", playerUuid);
 
-                chestMap.setChest(block.getWorld().getName(), chestMap.getXYZ(block.getLocation()), pMap);
-            }
-        }
-    }
-    //json stuff done
 
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
-        if (clickedBlock!=null && Main.isLockable(clickedBlock.getType())) {
+        if (clickedBlock!=null && Main.chestManager.isLockable(clickedBlock.getType())) {
+            Location clickedLocation = clickedBlock.getLocation();
 
             Player player = event.getPlayer();
-            List<UUID> uuids = PersistInput.getPlayerUUIDS(clickedBlock);
 
             Long lastClickTime = lastClickTimeMap.get(player);
             boolean notRepeat = (lastClickTime==null||((System.currentTimeMillis()-lastClickTime)>50));
@@ -79,36 +47,37 @@ public class CLListener implements Listener {
             if (event.getItem() == null && event.getPlayer().isSneaking()) {
                 //do chest locking stuff
                 if (notRepeat) {
-                    if (uuids.isEmpty()) {
-                        PersistInput.addOwnerUUID(clickedBlock, player.getUniqueId());
-                        player.sendMessage(ChatColor.AQUA + "Chest locked");
-                    } else if (PersistInput.containsOwnerUUID(clickedBlock, player.getUniqueId()) || shouldBypass(player)) {
-                        PersistInput.unlockChest(clickedBlock);
-                        player.sendMessage(ChatColor.AQUA + "Chest unlocked");
+                    if (!Main.chestManager.isLocked(clickedLocation)) {
+                        Main.chestManager.addUUID(clickedLocation, player.getUniqueId().toString(), Perms.ADMIN);
+                        player.sendMessage(Main.LOCK_SUCCESS);
+                    } else if (Main.chestManager.containsUUID(clickedLocation, player.getUniqueId().toString(), Perms.ADMIN) || shouldBypass(player)) {
+                        Main.chestManager.removeChest(clickedLocation);
+                        player.sendMessage(Main.UNLOCK_SUCCESS);
                     } else
-                        player.sendMessage(ChatColor.RED + "This chest is already locked");
+                        player.sendMessage(Main.ALREADY_LOCKED);
                 }
                 event.setCancelled(true);
                 return;
             }
-            if (event.getItem() != null && event.getItem().getType() == (Material.BONE) && event.getPlayer().isSneaking() && (PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || hasAdminPerms(event.getPlayer()))) {
+            if (event.getItem() != null && event.getItem().getType() == (Material.BONE) && event.getPlayer().isSneaking() && (Main.chestManager.containsUUID(clickedLocation, player.getUniqueId().toString(), Perms.MEMBER) || hasAdminPerms(event.getPlayer()))) {
                 //Do send chest info stuff
-                if (!uuids.isEmpty()) {
+                if (Main.chestManager.isLocked(clickedLocation)) {
                     //gets owners
                     if (notRepeat) {
-                        player.sendMessage(ChatColor.GOLD + "The following players are owners of this chest:");
-                        List<UUID> ownerUUID = PersistInput.getOwnerUUIDS(clickedBlock);
-                        for (UUID uuid : ownerUUID) {
-                            String name = getOfflinePlayer(uuid).getName();
+                        player.sendMessage(Main.ALLOWED_OWNERS);
+                        List<String> adminUUIDs = Main.chestManager.getUUIDs(clickedLocation, Perms.ADMIN);
+                        for (String uuid : adminUUIDs) {
+                            String name = getOfflinePlayer(UUID.fromString(uuid)).getName();
                             if (name != null)
                                 player.sendMessage(ChatColor.LIGHT_PURPLE + name);
                         }
 
 
                         //gets users
-                        player.sendMessage(ChatColor.GOLD + "The following players are allowed to open this chest:");
-                        for (UUID uuid : uuids) {
-                            String name = getOfflinePlayer(uuid).getName();
+                        player.sendMessage(Main.ALLOWED_MEMBERS);
+                        List<String> memberUUIDs = Main.chestManager.getUUIDs(clickedLocation, Perms.MEMBER);
+                        for (String uuid : memberUUIDs) {
+                            String name = getOfflinePlayer(UUID.fromString(uuid)).getName();
                             if (name != null)
                                 player.sendMessage(ChatColor.LIGHT_PURPLE + name);
                         }
@@ -117,45 +86,21 @@ public class CLListener implements Listener {
                 } else {
                     if (event.getItem() != null && event.getItem().getType() == Material.BONE)
                         if (notRepeat)
-                            player.sendMessage(ChatColor.DARK_PURPLE + "This chest isn't locked");
+                            player.sendMessage(Main.NOT_LOCKED);
                 }
 
             }
 
 
-            if (!uuids.isEmpty()&&(!player.isSneaking())) {
-                if (!(PersistInput.containsUUID(clickedBlock, player.getUniqueId()) || shouldBypass(event.getPlayer()))) {
+            if (Main.chestManager.isLocked(clickedLocation) && (!player.isSneaking())) {
+                if (!(Main.chestManager.containsUUID(clickedLocation, player.getUniqueId().toString(), Perms.MEMBER) || shouldBypass(event.getPlayer()))) {
                     if (notRepeat)
-                        player.sendMessage(ChatColor.RED + "Chest is locked!");
+                        player.sendMessage(Main.CHEST_IS_LOCKED);
 
 
                     event.setCancelled(true);
                 }
             }
-
-            //Code bellow this is to convert to json file
-
-            Block newBlock = clickedBlock;
-            if (Main.canBeDouble(clickedBlock.getType()))
-                newBlock = ((Chest) clickedBlock.getState()).getInventory().getLocation().getBlock();
-
-            if (PersistInput.isLocked(newBlock)) {
-
-                LinkedList<String> ownerUuid = new LinkedList<>();
-                for (UUID uuid : PersistInput.getOwnerUUIDS(newBlock)) {
-                    ownerUuid.add(uuid.toString());
-                }
-                LinkedList<String> playerUuid = new LinkedList<>();
-                for (UUID uuid : PersistInput.getPlayerUUIDS(newBlock)) {
-                    playerUuid.add(uuid.toString());
-                }
-                HashMap<String, LinkedList<String>> pMap = new HashMap<>();
-                pMap.put("owner", ownerUuid);
-                pMap.put("player", playerUuid);
-
-                chestMap.setChest(newBlock.getWorld().getName(), chestMap.getXYZ(newBlock.getLocation()), pMap);
-            } else chestMap.removeChest(newBlock.getWorld().getName(), chestMap.getXYZ(newBlock.getLocation()));
-            //End of json converter
 
         }
     }
@@ -164,13 +109,13 @@ public class CLListener implements Listener {
         Block blockPlaced = event.getBlock();
         if (blockPlaced.getType()==(Material.HOPPER)){
             Block aboveBlock = blockPlaced.getLocation().add(0,1,0).getBlock();
-            if (Main.isLockable(aboveBlock.getType())){
-                if (PersistInput.isLocked(aboveBlock)) {
-                    if (!PersistInput.containsOwnerUUID(aboveBlock, event.getPlayer().getUniqueId())) {
+            if (Main.chestManager.isLockable(aboveBlock.getType())){
+                if (Main.chestManager.isLocked(aboveBlock.getLocation())) {
+                    if (!Main.chestManager.containsUUID(aboveBlock.getLocation(), event.getPlayer().getUniqueId().toString(), Perms.ADMIN)) {
                         event.setCancelled(true);
-                        event.getPlayer().sendMessage(ChatColor.RED + "You can't place hoppers under a locked chest you don't have access to");
+                        event.getPlayer().sendMessage(Main.HOPPER_UNDER_CHEST);
                     } else {
-                        event.getPlayer().sendMessage(ChatColor.AQUA + "Remember this hopper is not locked.");
+                        event.getPlayer().sendMessage(Main.HOPPER_NOT_LOCKED);
                     }
                 }
             }
@@ -178,23 +123,39 @@ public class CLListener implements Listener {
     }
     @EventHandler
     public void OnBreakEvent(BlockBreakEvent event){
-        if (Main.isLockable(event.getBlock().getType())){
-            if (PersistInput.isLocked(event.getBlock())) {
-                if (!(PersistInput.containsOwnerUUID(event.getBlock(), event.getPlayer().getUniqueId()) || shouldBypass(event.getPlayer()))) {
+        if (Main.chestManager.isLockable(event.getBlock().getType())){
+            if (Main.chestManager.isLocked(event.getBlock().getLocation())) {
+                if (!(Main.chestManager.containsUUID(event.getBlock().getLocation(), event.getPlayer().getUniqueId().toString(), Perms.ADMIN)
+                        || shouldBypass(event.getPlayer()))) {
+
                     event.setCancelled(true);
+
+                } else {
+                    //This is neccessary because of how fucking stupidly double chests are coded in minecraft.
+                    //When a double chest is broken it will get the other side and copy the data to that side.
+                    if (Main.chestManager.canBeDouble(event.getBlock().getType())) {
+                        Chest chest = ((Chest) event.getBlock().getState());
+                        if (chest.getInventory() instanceof DoubleChestInventory) {
+                            DoubleChestInventory dbChest = (DoubleChestInventory) chest.getInventory();
+                            Location otherSide;
+
+                            //get the location of the side that wasn't broken
+                            if (event.getBlock().getLocation() == dbChest.getRightSide().getLocation()) {
+                                otherSide = dbChest.getLeftSide().getLocation();
+                            } else {
+                                otherSide = dbChest.getRightSide().getLocation();
+                            }
+
+                            HashMap<String, LinkedList<String>> tempMap = Main.chestManager.getChest(event.getBlock().getLocation(), false);
+                            Main.chestManager.removeChest(event.getBlock().getLocation(), false);
+                            Main.chestManager.setChest(otherSide, tempMap, false);
+
+                        } else {
+                            Main.chestManager.removeChest(event.getBlock().getLocation());
+                        }
+                    }
                 }
             }
-
-            //Convert
-            Block newBlock = event.getBlock();
-            if (Main.canBeDouble(event.getBlock().getType()))
-                newBlock = ((Chest) event.getBlock().getState()).getInventory().getLocation().getBlock();
-
-            if (newBlock.getLocation().toString().equals(event.getBlock().getLocation().toString())) {
-
-                chestMap.removeChest(newBlock.getWorld().getName(), chestMap.getXYZ(newBlock.getLocation()));
-            }
-            //end
 
         }
     }
@@ -213,8 +174,8 @@ public class CLListener implements Listener {
     }
 
     public boolean shouldExplode(Block block){
-        if (Main.isLockable(block.getType()))
-            return PersistInput.isLocked(block);
+        if (Main.chestManager.isLockable(block.getType()))
+            return Main.chestManager.isLocked(block.getLocation());
         return false;
     }
 
@@ -230,17 +191,54 @@ public class CLListener implements Listener {
             if (loc == null)
                 return;
             Block lockedBlock = loc.getBlock();
-            if (Main.isLockable(lockedBlock.getType())){
-                if (PersistInput.isLockedStateNoUpdate(lockedBlock.getState(true))) {
+            if (Main.chestManager.isLockable(lockedBlock.getType())){
+                if (Main.chestManager.isLocked(loc)) {
                     event.setCancelled(true);
                 }
             }
         }
     }
 
+
     @EventHandler
     public void onBlockPlace (BlockPlaceEvent event){
+        if (Main.chestManager.isLocked(event.getBlock().getLocation())) {
+            Main.chestManager.removeChest(event.getBlock().getLocation());
+        }
+        if (Main.chestManager.canBeDouble(event.getBlock().getType()))
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    System.out.println("RUNNABLE RUNNING");
+                    Chest chest = ((Chest) event.getBlock().getState());
+                    if (chest.getInventory() instanceof DoubleChestInventory){
+                        System.out.println("IT IS INSTANCE OF IT");
+                        DoubleChestInventory dbChest = (DoubleChestInventory) chest.getInventory();
+                        Location otherSide;
+                        Location invSide = chest.getInventory().getLocation().toBlockLocation();
 
+                        //get the location of the side that wasn't placed
+                        if (event.getBlock().getLocation() == dbChest.getRightSide().getLocation()){
+                            otherSide = dbChest.getLeftSide().getLocation();
+                        } else {
+                            otherSide = dbChest.getRightSide().getLocation();
+                        }
+
+                        System.out.println(otherSide);
+                        System.out.println(invSide);
+
+                        if (Main.chestManager.isLocked(otherSide, false)){
+                            System.out.println("OTHER SIDE IS LOCKED");
+                            HashMap<String, LinkedList<String>> tempMap = Main.chestManager.getChest(otherSide, false);
+                            System.out.println(tempMap);
+                            Main.chestManager.removeChest(otherSide, false).removeChest(event.getBlock().getLocation(), false);
+                            Main.chestManager.setChest(invSide, tempMap, false);
+                        }
+
+
+                    }
+                }
+            }.runTaskLater(Main.getPlugin(), 1);
     }
 
 

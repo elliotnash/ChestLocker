@@ -3,18 +3,13 @@ package chestlock.chestlock.commands;
 import java.util.*;
 
 import chestlock.chestlock.Main;
-import chestlock.chestlock.Vars;
-import chestlock.chestlock.persist.PersistConvert;
-import chestlock.chestlock.persist.PersistInput;
+import chestlock.chestlock.data.Perms;
 import javafx.util.Pair;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -46,7 +41,10 @@ public class CL implements TabExecutor {
                     return BLANK;
                 }
                 Block block = ((Player)sender).getTargetBlock(10);
-                if (args[0].equalsIgnoreCase("add")&&block!=null&&Main.isLockable(block.getType())&&(PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId()) || !PersistInput.isLocked(block))){
+                if (args[0].equalsIgnoreCase("add")&&block!=null&&Main.chestManager.isLockable(block.getType())
+                        &&(Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)
+                        || !Main.chestManager.isLocked(block.getLocation()))){
+
                     List<String> playerNames = new LinkedList<>();
                     playerNames.add("owner");
                     for (OfflinePlayer player : getOfflinePlayers()){
@@ -54,10 +52,12 @@ public class CL implements TabExecutor {
                     }
                     return StringUtil.copyPartialMatches(args[1], playerNames, new ArrayList<>());
                 }
-                if (args[0].equalsIgnoreCase("remove")&&block!=null&&Main.isLockable(block.getType())&&PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId())){
-                    List<UUID> ownerUUIDS = PersistInput.getPlayerUUIDS(block);
+                if (args[0].equalsIgnoreCase("remove")&&block!=null&&Main.chestManager.isLockable(block.getType())
+                        && Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)){
+
+                    List<String> memberUUIDs = Main.chestManager.getUUIDs(block.getLocation(), Perms.MEMBER);
                     List<String> playerNames = new LinkedList<>();
-                    for (UUID uuid : ownerUUIDS){
+                    for (String uuid : memberUUIDs){
                         playerNames.add(Bukkit.getOfflinePlayer(uuid).getName());
                     }
                     playerNames.add("owner");
@@ -66,18 +66,21 @@ public class CL implements TabExecutor {
             }
             if (args.length == 3){
                 Block block = ((Player)sender).getTargetBlock(10);
-                if (args[1].equalsIgnoreCase("owner")&&args[0].equalsIgnoreCase("add")&&block!=null&&Main.isLockable(block.getType())&&(PersistInput.containsOwnerUUID(block, ((Player) sender).getUniqueId()) || !PersistInput.isLocked(block))){
+                if (args[1].equalsIgnoreCase("owner")&&args[0].equalsIgnoreCase("add")&&block!=null
+                        && Main.chestManager.isLockable(block.getType())&&(Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)
+                        || !Main.chestManager.isLocked(block.getLocation()))){
+
                     List<String> playerNames = new LinkedList<>();
                     for (OfflinePlayer player : getOfflinePlayers()){
                         playerNames.add(player.getName());
                     }
                     return StringUtil.copyPartialMatches(args[2], playerNames, new ArrayList<>());
                 }
-                if (args[1].equalsIgnoreCase("owner")&&block!=null&&Main.isLockable(block.getType())&&args[0].equalsIgnoreCase("remove")){
-                    List<UUID> ownerUUIDS = PersistInput.getOwnerUUIDS(block);
-                    if (ownerUUIDS.contains(((Player) sender).getUniqueId())) {
+                if (args[1].equalsIgnoreCase("owner")&&block!=null&&Main.chestManager.isLockable(block.getType())&&args[0].equalsIgnoreCase("remove")){
+                    List<String> ownerUUIDS = Main.chestManager.getUUIDs(block.getLocation(), Perms.ADMIN);
+                    if (ownerUUIDS.contains(((Player) sender).getUniqueId().toString())) {
                         List<String> playerNames = new LinkedList<>();
-                        for (UUID uuid : ownerUUIDS) {
+                        for (String uuid : ownerUUIDS) {
                             playerNames.add(Bukkit.getOfflinePlayer(uuid).getName());
                         }
                         return StringUtil.copyPartialMatches(args[2], playerNames, new ArrayList<>());
@@ -108,21 +111,21 @@ public class CL implements TabExecutor {
             }
             return false;
             case 2: if (args[0].equalsIgnoreCase("add")&&!args[1].equalsIgnoreCase("owner")){
-                addPlayer(sender, args[1]);
+                addPlayer(sender, args[1], Perms.MEMBER);
                 return true;
             }
             if (args[0].equalsIgnoreCase("remove")&&!args[1].equalsIgnoreCase("owner")){
-                removePlayers(sender, args[1]);
+                removePlayer(sender, args[1], Perms.MEMBER);
                 return true;
             } return false;
             case 3:
 
                 if (args[0].equalsIgnoreCase("add")&&args[1].equalsIgnoreCase("owner")){
-                addOwner(sender, args[2]);
+                addPlayer(sender, args[2], Perms.ADMIN);
                 return true;
             }
             if (args[0].equalsIgnoreCase("remove")&&args[1].equalsIgnoreCase("owner")){
-                removeOwner(sender, args[2]);
+                removePlayer(sender, args[2], Perms.ADMIN);
                 return true;
             }
         }
@@ -134,21 +137,18 @@ public class CL implements TabExecutor {
             Player playerSender = (Player) sender;
 
             Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType())) {
-                if (!PersistInput.isLocked(block)) {
-                    if (PersistInput.addOwnerUUID(block, playerSender.getUniqueId())) {
-                        playerSender.sendMessage(ChatColor.AQUA + "Chest locked");
-                    } else {
-                        playerSender.sendMessage(ChatColor.RED + "This chest is already locked!");
-                    }
+            if (block != null && Main.chestManager.isLockable(block.getType())) {
+                if (!Main.chestManager.isLocked(block.getLocation())) {
+                    Main.chestManager.addUUID(block.getLocation(), playerSender.getUniqueId().toString(), Perms.ADMIN);
+                    playerSender.sendMessage(Main.LOCK_SUCCESS);
                 } else {
-                    playerSender.sendMessage(ChatColor.RED + "This chest is already locked!");
+                    playerSender.sendMessage(Main.ALREADY_LOCKED);
                 }
             } else {
-                playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block");
+                playerSender.sendMessage(Main.LOCKABLE_BLOCK);
             }
         } else {
-            sender.sendMessage("Please run this command as a player");
+            sender.sendMessage(Main.FROM_CONSOLE);
         }
     }
 
@@ -157,54 +157,58 @@ public class CL implements TabExecutor {
             Player playerSender = (Player) sender;
 
             Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType())) {
-                List<UUID> ownerUUIDs = PersistInput.getOwnerUUIDS(block);
-                if (!ownerUUIDs.isEmpty()){
-                    if (ownerUUIDs.contains(playerSender.getUniqueId())){
-                        PersistInput.unlockChest(block);
-                        playerSender.sendMessage(ChatColor.AQUA+"Chest unlocked");
+            if (block != null && Main.chestManager.isLockable(block.getType())) {
+                //List<UUID> ownerUUIDs = DataManager.getOwnerUUIDS(block);
+                if (Main.chestManager.isLocked(block.getLocation())){
+                    if (Main.chestManager.containsUUID(block.getLocation(), playerSender.getUniqueId().toString(), Perms.ADMIN)){
+                        Main.chestManager.removeChest(block.getLocation());
+                        playerSender.sendMessage(Main.UNLOCK_SUCCESS);
                     } else {
-                        playerSender.sendMessage(ChatColor.RED+"Only a chest owner can add players");
+                        playerSender.sendMessage(Main.NOT_OWNER);
                     }
                 } else {
-                    playerSender.sendMessage(ChatColor.RED+"This chest isn't locked");
+                    playerSender.sendMessage(Main.NOT_LOCKED);
                 }
 
             } else {
-                playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block");
+                playerSender.sendMessage(Main.LOCKABLE_BLOCK);
             }
         } else {
-            sender.sendMessage("Please run this command as a player");
+            sender.sendMessage(Main.FROM_CONSOLE);
         }
     }
 
     public static void listPlayers(CommandSender sender){
+        System.out.println(Main.chestManager.getMap());
         if (sender instanceof Player) {
             Player player = (Player) sender;
             Block block = player.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType()) && (PersistInput.containsUUID(block, player.getUniqueId()) || hasAdminPerms(player) )) {
+            if (block != null && Main.chestManager.isLockable(block.getType())
+                    && (Main.chestManager.containsUUID(block.getLocation(), player.getUniqueId().toString(), Perms.MEMBER)
+                    || hasAdminPerms(player) )) {
+
                 //Do send chest info stuff
-                List<UUID> uuids = PersistInput.getPlayerUUIDS(block);
-                if (!uuids.isEmpty()) {
-                    //gets owners
-                    player.sendMessage(ChatColor.GOLD+"The following players are owners of this chest:");
-                    List<UUID> ownerUUID = PersistInput.getOwnerUUIDS(block);
-                    for (UUID uuid : ownerUUID) {
-                        String name = getOfflinePlayer(uuid).getName();
+                if (Main.chestManager.isLocked(block.getLocation())) {
+                    //gets admins
+                    player.sendMessage(Main.ALLOWED_OWNERS);
+                    List<String> adminUUIDs = Main.chestManager.getUUIDs(block.getLocation(), Perms.ADMIN);
+                    for (String uuid : adminUUIDs) {
+                        String name = getOfflinePlayer(UUID.fromString(uuid)).getName();
                         if (name!=null)
                             player.sendMessage(ChatColor.LIGHT_PURPLE+name);
                     }
 
 
                     //gets users
-                    player.sendMessage(ChatColor.GOLD+"The following players are allowed to open this chest:");
-                    for (UUID uuid : uuids) {
-                        String name = getOfflinePlayer(uuid).getName();
+                    player.sendMessage(Main.ALLOWED_MEMBERS);
+                    List<String> memberUUIDs = Main.chestManager.getUUIDs(block.getLocation(), Perms.MEMBER);
+                    for (String uuid : memberUUIDs) {
+                        String name = getOfflinePlayer(UUID.fromString(uuid)).getName();
                         if (name!=null)
                             player.sendMessage(ChatColor.LIGHT_PURPLE+name);
                     }
                 } else {
-                    player.sendMessage(ChatColor.DARK_PURPLE + "This chest isn't locked");
+                    player.sendMessage(Main.NOT_LOCKED);
                 }
             } else {
                 player.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block and that you have permissions");
@@ -216,151 +220,58 @@ public class CL implements TabExecutor {
     }
 
     @SuppressWarnings("all")
-    public static Pair<Boolean, OfflinePlayer> getBedrockOfflinePlayer(String playerName){
+    public static OfflinePlayer getBedrockOfflinePlayer(String playerName){
         OfflinePlayer[] offlinePLayers = getOfflinePlayers();
         for (OfflinePlayer player : offlinePLayers){
             if (player.getName().equals(playerName)){
-                return new Pair<>(true, player);
+                return player;
             }
         }
-        return new Pair<>(false, null);
+        return null;
     }
 
-    public static void addPlayer(CommandSender sender, String targetName){
+    public static void addPlayer(CommandSender sender, String targetName, String permissionLevel){
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
 
 
-            UUID playerTargetUUID;
-            OfflinePlayer playerTarget;
+            OfflinePlayer playerTarget = Arrays.stream(Bukkit.getOfflinePlayers())
+                    .filter(player -> player.getName().equals(targetName))
+                    .findFirst().orElse(null);
+            UUID playerTargetUUID = playerTarget == null ? null : playerTarget.getUniqueId();
 
 
-            if (Main.geyserPrefix==null) {
-
-                //runs if target is java player
-                playerTargetUUID = getPlayerUniqueId(targetName);
-                if (playerTargetUUID == null) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
-                if (!playerTarget.hasPlayedBefore()) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-            } else if (!targetName.startsWith(Main.geyserPrefix)) {
-                //runs if target is java player
-                playerTargetUUID = getPlayerUniqueId(targetName);
-                if (playerTargetUUID == null) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
-                if (!playerTarget.hasPlayedBefore()) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-            }else {
-                // runs if target player is bedrock to detect if the player is an offline player
-                Pair<Boolean, OfflinePlayer> bedrockPair = getBedrockOfflinePlayer(targetName);
-                if (bedrockPair.getKey()) {
-                    playerTarget = bedrockPair.getValue();
-                    playerTargetUUID = playerTarget.getUniqueId();
-                } else {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
+            if (playerTargetUUID==null){
+                playerSender.sendMessage(Main.INVALID_PLAYER);
+                return;
             }
+
             Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType())) {
-                if ((PersistInput.containsOwnerUUID(block, playerSender.getUniqueId()) || shouldBypass(playerSender))) {
+            if (block != null && Main.chestManager.isLockable(block.getType())) {
+                if ((Main.chestManager.containsUUID(block.getLocation(), playerSender.getUniqueId().toString(), Perms.ADMIN)
+                        || shouldBypass(playerSender))) {
                     //do chest locking stuff
-                    if (PersistInput.addPlayerUUID(block, playerTargetUUID)) {
-                        playerSender.sendMessage(ChatColor.AQUA + playerTarget.getName() + " has been given access to this chest");
+                    if (Main.chestManager.addUUID(block.getLocation(), playerTargetUUID.toString(), permissionLevel)) {
+                        playerSender.sendMessage(String.format(Main.ACCESS_GRANTED, targetName, permissionLevel.toLowerCase()));
                         if (playerTarget.isOnline()) {
-                            playerTarget.getPlayer().sendMessage(ChatColor.AQUA + "You have been given access to " + playerSender.getName() + "'s chest");
+                            playerTarget.getPlayer().sendMessage(String.format(Main.GIVEN_ACCESS, permissionLevel.toLowerCase(), playerSender.getName()));
                         }
                     } else {
-                        playerSender.sendMessage(ChatColor.RED + playerTarget.getName() + " already has access to this chest");
+                        playerSender.sendMessage(String.format(Main.HAS_ACCESS, targetName, permissionLevel.toLowerCase()));
                     }
                 } else {
-                    playerSender.sendMessage(ChatColor.RED+"Only a chest owner can add players");
+                    playerSender.sendMessage(Main.NOT_OWNER);
                 }
 
             } else {
-                playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block");
+                playerSender.sendMessage(Main.LOCKABLE_BLOCK);
             }
         } else {
-            sender.sendMessage("Please run this command as a player");
+            sender.sendMessage(Main.FROM_CONSOLE);
         }
     }
 
-    public static void addOwner(CommandSender sender, String targetName){
-        if (sender instanceof Player) {
-            Player playerSender = (Player) sender;
-
-            UUID playerTargetUUID;
-            OfflinePlayer playerTarget;
-
-
-            if (Main.geyserPrefix==null) {
-
-                //runs if target is java player
-                playerTargetUUID = getPlayerUniqueId(targetName);
-                if (playerTargetUUID == null) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
-                if (!playerTarget.hasPlayedBefore()) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-            } else if (!targetName.startsWith(Main.geyserPrefix)) {
-                //runs if target is java player
-                playerTargetUUID = getPlayerUniqueId(targetName);
-                if (playerTargetUUID == null) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-                playerTarget = Bukkit.getOfflinePlayer(playerTargetUUID);
-                if (!playerTarget.hasPlayedBefore()) {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-            }else {
-                // runs if target player is bedrock to detect if the player is an offline player
-                Pair<Boolean, OfflinePlayer> bedrockPair = getBedrockOfflinePlayer(targetName);
-                if (bedrockPair.getKey()) {
-                    playerTarget = bedrockPair.getValue();
-                    playerTargetUUID = playerTarget.getUniqueId();
-                } else {
-                    playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
-                    return;
-                }
-            }
-
-            Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType()) && (PersistInput.containsOwnerUUID(block, playerSender.getUniqueId()) || shouldBypass(playerSender))) {
-                //do chest locking stuff
-                if (PersistInput.addOwnerUUID(block, playerTargetUUID)){
-                    playerSender.sendMessage(ChatColor.AQUA+playerTarget.getName()+" has been given owner access to this chest");
-                    if (playerTarget.isOnline()){
-                        playerTarget.getPlayer().sendMessage(ChatColor.AQUA+"You have been given owner access to "+playerSender.getName()+"'s chest");
-                    }
-                } else {
-                    playerSender.sendMessage(ChatColor.RED+playerTarget.getName()+" already has owner access to this chest");
-                }
-
-            } else {
-                playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a locked block and that you have permissions");
-            }
-        } else {
-            sender.sendMessage("Please run this command as a player");
-        }
-    }
-
-    public static void removePlayers(CommandSender sender, String targetName){
+    public static void removePlayer(CommandSender sender, String targetName, String permissionLevel){
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
 
@@ -371,52 +282,40 @@ public class CL implements TabExecutor {
 
 
             if (playerTargetUUID==null){
-                playerSender.sendMessage(ChatColor.RED+"Invalid player");
+                playerSender.sendMessage(Main.INVALID_PLAYER);
                 return;
             }
 
             Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType()) && (PersistInput.containsOwnerUUID(block, playerSender.getUniqueId()) || shouldBypass(playerSender))) {
-                if (PersistInput.containsOwnerUUID(block, playerSender.getUniqueId())) {
-                    PersistInput.removeOwnerUUID(block, playerTargetUUID);
-                    if (PersistInput.removePlayerUUID(block, playerTargetUUID))
-                        playerSender.sendMessage(ChatColor.AQUA + targetName + " can no longer access this chest");
-                    else playerSender.sendMessage(ChatColor.RED + targetName + " was not allowed in this chest");
+            if (block != null && Main.chestManager.isLockable(block.getType())){
+                if (Main.chestManager.containsUUID(block.getLocation(), playerSender.getUniqueId().toString(), permissionLevel)
+                        || shouldBypass(playerSender)){
+
+
+                    if (Main.chestManager.removeUUID(block.getLocation(), playerTargetUUID.toString(), permissionLevel)) {
+                        switch (permissionLevel) {
+                            case Perms.ADMIN:
+                                playerSender.sendMessage(String.format(Main.ADMIN_REMOVED, targetName));
+                            case Perms.MEMBER:
+                                playerSender.sendMessage(String.format(Main.MEMBER_REMOVED, targetName));
+                        }
+                    } else {
+                        switch (permissionLevel) {
+                            case Perms.ADMIN:
+                                playerSender.sendMessage(String.format(Main.MEMBER_NOT_ALLOWED, targetName));
+                            case Perms.MEMBER:
+                                playerSender.sendMessage(String.format(Main.OWNER_NOT_ALLOWED, targetName));
+                        }
+                    }
+                } else {
+                    playerSender.sendMessage(Main.NOT_OWNER);
                 }
-            } else {
-                playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block and that you have permissions");
-            }
-        } else {
-            sender.sendMessage("Please run this command as a player");
-        }
-    }
-
-    public static void removeOwner(CommandSender sender, String targetName){
-        if (sender instanceof Player) {
-            Player playerSender = (Player) sender;
-
-            OfflinePlayer playerTarget = Arrays.stream(Bukkit.getOfflinePlayers())
-                    .filter(player -> player.getName().equals(targetName))
-                    .findFirst().orElse(null);
-            UUID playerTargetUUID = playerTarget == null ? null : playerTarget.getUniqueId();
-
-
-            if (playerTargetUUID==null){
-                playerSender.sendMessage(ChatColor.RED+"Invalid player");
-                return;
-            }
-
-            Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.isLockable(block.getType()) && (PersistInput.containsOwnerUUID(block, playerSender.getUniqueId()) || shouldBypass(playerSender))) {
-                    if (PersistInput.removeOwnerUUID(block, playerTargetUUID))
-                        playerSender.sendMessage(ChatColor.AQUA + targetName + " no longer has owner privileges");
-                    else playerSender.sendMessage(ChatColor.RED + targetName + " was not an owner");
 
             } else {
-                playerSender.sendMessage(ChatColor.RED+"Please make sure you are looking at a lockable block and that you have permissions");
+                playerSender.sendMessage(Main.LOCKABLE_BLOCK);
             }
         } else {
-            sender.sendMessage("Please run this command as a player");
+            sender.sendMessage(Main.FROM_CONSOLE);
         }
     }
 
@@ -431,17 +330,15 @@ public class CL implements TabExecutor {
                     if (bypass == 0) {
                         container.set(BypassKey, PersistentDataType.INTEGER, 1);
                         player.sendMessage(ChatColor.DARK_AQUA + "You are now bypassing chest protection");
-                        return true;
                     } else {
                         container.set(BypassKey, PersistentDataType.INTEGER, 0);
                         player.sendMessage(ChatColor.DARK_AQUA + "You are no longer bypassing chest protection");
-                        return true;
                     }
                 } else {
                     container.set(BypassKey, PersistentDataType.INTEGER, 1);
                     player.sendMessage(ChatColor.DARK_AQUA + "You are now bypassing chest protection");
-                    return true;
                 }
+                return true;
             }
         } else {
             sender.sendMessage("Please run this command as a player");
