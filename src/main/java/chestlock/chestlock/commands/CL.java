@@ -3,22 +3,17 @@ package chestlock.chestlock.commands;
 import java.util.*;
 
 import chestlock.chestlock.Main;
-import chestlock.chestlock.Vars;
-import chestlock.chestlock.persist.PersistConvert;
 import chestlock.chestlock.persist.PersistInput;
-import javafx.util.Pair;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.StringUtil;
+import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import static org.bukkit.Bukkit.*;
@@ -263,8 +258,8 @@ public class CL implements TabExecutor {
             }else {
                 // runs if target player is bedrock to detect if the player is an offline player
                 Pair<Boolean, OfflinePlayer> bedrockPair = getBedrockOfflinePlayer(targetName);
-                if (bedrockPair.getKey()) {
-                    playerTarget = bedrockPair.getValue();
+                if (bedrockPair.getValue0()) {
+                    playerTarget = bedrockPair.getValue1();
                     playerTargetUUID = playerTarget.getUniqueId();
                 } else {
                     playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
@@ -331,8 +326,8 @@ public class CL implements TabExecutor {
             }else {
                 // runs if target player is bedrock to detect if the player is an offline player
                 Pair<Boolean, OfflinePlayer> bedrockPair = getBedrockOfflinePlayer(targetName);
-                if (bedrockPair.getKey()) {
-                    playerTarget = bedrockPair.getValue();
+                if (bedrockPair.getValue0()) {
+                    playerTarget = bedrockPair.getValue1();
                     playerTargetUUID = playerTarget.getUniqueId();
                 } else {
                     playerSender.sendMessage(ChatColor.RED + "This player is invalid or has not played before");
