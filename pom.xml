@@ -27,6 +27,7 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <outputFileName>target/hello.jar</outputFileName>
                 </configuration>
             </plugin>
             <plugin>
@@ -41,6 +42,7 @@
                             <shadedPattern>chestlock.chestlock.paperlib</shadedPattern> <!-- Replace this -->
                         </relocation>
                     </relocations>
+                    <outputFile>target/ChestLock.jar</outputFile>
                 </configuration>
                 <executions>
                     <execution>
