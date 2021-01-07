@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.StringUtil;
+import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import static org.bukkit.Bukkit.*;
@@ -271,6 +272,7 @@ public class CL implements TabExecutor {
     }
 
     public static void removePlayer(CommandSender sender, String targetName, String permissionLevel){
+
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
 
