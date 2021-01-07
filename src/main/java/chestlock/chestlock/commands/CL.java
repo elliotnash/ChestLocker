@@ -4,7 +4,6 @@ import java.util.*;
 
 import chestlock.chestlock.Main;
 import chestlock.chestlock.data.Perms;
-import javafx.util.Pair;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
