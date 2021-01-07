@@ -13,7 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.StringUtil;
-import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import static org.bukkit.Bukkit.*;

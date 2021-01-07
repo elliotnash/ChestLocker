@@ -286,7 +286,6 @@ public class chestManager {
 
     //gets true block of double chest
     private Location getDoubleChestLocation(Location location){
-        System.out.println("YOU ARE GETTING DOUBLE CHEST LOCATION RIGHT NOW");
         if (canBeDouble(location.getBlock().getType())) {
             Chest chest = ((Chest) location.getBlock().getState());
             if (chest.getInventory() instanceof DoubleChestInventory){
