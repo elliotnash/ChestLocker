@@ -6,7 +6,7 @@
 
     <groupId>ChestLock</groupId>
     <artifactId>ChestLock</artifactId>
-    <version>2.0-SNAPSHOT-1</version>
+    <version>2.0</version>
     <packaging>jar</packaging>
 
     <name>ChestLock</name>
@@ -27,7 +27,7 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
-                    <outputFileName>target/hello.jar</outputFileName>
+                    <outputFileName>target/ChestLock.jar</outputFileName>
                 </configuration>
             </plugin>
             <plugin>
