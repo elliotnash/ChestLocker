@@ -1,5 +1,5 @@
 name: ChestLock
-version: ${project.version}
+version: ${jenkins.buildNumber}
 main: chestlock.chestlock.Main
 api-version: 1.13
 authors: [Elliot]

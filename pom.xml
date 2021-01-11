@@ -15,10 +15,17 @@
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jenkins.buildNumber>${env.BUILD_NUMBER}</jenkins.buildNumber>
     </properties>
 
+    <scm>
+        <connection>scm:git:https://github.com/elliotnash/ChestLocker.git</connection>
+        <developerConnection>scm:git:git@github.com:elliotnash/ChestLocker.git</developerConnection>
+        <url>https://github.com/elliotnash/ChestLocker</url>
+    </scm>
+
     <build>
-        <defaultGoal>clean package</defaultGoal>
+        <defaultGoal>clean package -Denv.BUILD_NUMBER=${BUILD_NUMBER}</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
