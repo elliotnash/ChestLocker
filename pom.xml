@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>ChestLock</groupId>
+    <groupId>org.elliotnash</groupId>
     <artifactId>ChestLock</artifactId>
     <version>2.0</version>
     <packaging>jar</packaging>
@@ -15,6 +15,7 @@
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!--suppress UnresolvedMavenProperty -->
         <jenkins.buildNumber>${env.BUILD_NUMBER}</jenkins.buildNumber>
     </properties>
 
@@ -25,6 +26,7 @@
     </scm>
 
     <build>
+        <!--suppress UnresolvedMavenProperty -->
         <defaultGoal>clean package -Denv.BUILD_NUMBER=${BUILD_NUMBER}</defaultGoal>
         <plugins>
             <plugin>
@@ -40,7 +42,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.2.4</version>
                 <configuration>
                     <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
                     <relocations>
@@ -74,7 +76,6 @@
             <id>papermc</id>
             <url>https://papermc.io/repo/repository/maven-public/</url>
         </repository>
-
     </repositories>
 
     <dependencies>
@@ -95,6 +96,11 @@
             <artifactId>paperlib</artifactId>
             <version>1.0.4</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.elliotnash</groupId>
+            <artifactId>JenkinsUpdater</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
