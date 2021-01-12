@@ -9,7 +9,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Chest;
 import org.bukkit.inventory.DoubleChestInventory;
-import sun.awt.image.ImageWatched;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -20,7 +19,6 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-@SuppressWarnings("unchecked")
 public class chestManager {
 
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();

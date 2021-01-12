@@ -6,6 +6,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.elliotnash.JenkinsUpdater;
 
 import java.util.logging.Logger;
@@ -49,16 +50,21 @@ public final class Main extends JavaPlugin {
     }
 
     private void updateCheck(){
-        String version = plugin.getDescription().getVersion();
-        JenkinsUpdater updater = new JenkinsUpdater("https://ci.elliotnash.org/job/Minecraft/job/ChestLocker", version);
-        if (updater.shouldUpdate) {
-            int versionDiff = updater.latestVersion-updater.currentVersion;
-            if (versionDiff==1)
-                logger.warning("ChestLocker is 1 version behind");
-            else
-                logger.warning("ChestLocker is "+versionDiff+" versions behind");
-            logger.warning("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
-        }
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                String version = plugin.getDescription().getVersion();
+                JenkinsUpdater updater = new JenkinsUpdater("https://ci.elliotnash.org/job/Minecraft/job/ChestLocker", version);
+                if (updater.shouldUpdate) {
+                    int versionDiff = updater.latestVersion - updater.currentVersion;
+                    if (versionDiff == 1)
+                        logger.warning("ChestLocker is 1 version behind");
+                    else
+                        logger.warning("ChestLocker is " + versionDiff + " versions behind");
+                    logger.warning("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
+                }
+            }
+        }.runTaskLaterAsynchronously(this, 100);
     }
 
     public static void log(String toLog){ logger.info(toLog); }
