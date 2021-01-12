@@ -52,9 +52,12 @@ public final class Main extends JavaPlugin {
         String version = plugin.getDescription().getVersion();
         JenkinsUpdater updater = new JenkinsUpdater("https://ci.elliotnash.org/job/Minecraft/job/ChestLocker", version);
         if (updater.shouldUpdate) {
-            logger.info("You are running an outdated version of ChestLocker");
-            logger.info("Current version: "+updater.currentVersion+", latest version: "+updater.latestVersion);
-            logger.info("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
+            int versionDiff = updater.latestVersion-updater.currentVersion;
+            if (versionDiff==1)
+                logger.warning("ChestLocker is 1 version behind");
+            else
+                logger.warning("ChestLocker is "+versionDiff+" versions behind");
+            logger.warning("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
         }
     }
 
