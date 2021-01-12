@@ -6,6 +6,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.elliotnash.JenkinsUpdater;
 
 import java.util.logging.Logger;
 
@@ -20,6 +21,10 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+
+        //update check
+        updateCheck();
+
         //load json for chestMap
         chestManager.loadJson();
 
@@ -41,6 +46,16 @@ public final class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+    }
+
+    private void updateCheck(){
+        String version = plugin.getDescription().getVersion();
+        JenkinsUpdater updater = new JenkinsUpdater("https://ci.elliotnash.org/job/Minecraft/job/ChestLocker", version);
+        if (updater.shouldUpdate) {
+            this.getLogger().info("You are running an outdated version of ChestLocker");
+            this.getLogger().info("Current version: "+updater.currentVersion+", latest version: "+updater.latestVersion);
+            this.getLogger().info("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
+        }
     }
 
     public static void log(String toLog){ logger.info(toLog); }
