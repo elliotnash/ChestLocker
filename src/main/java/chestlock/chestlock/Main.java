@@ -22,14 +22,14 @@ public final class Main extends JavaPlugin {
     @Override
     public void onEnable() {
 
+        plugin = this;
+        logger = getLogger();
+
         //update check
         updateCheck();
 
         //load json for chestMap
         chestManager.loadJson();
-
-        plugin = this;
-        logger = getLogger();
 
         this.saveDefaultConfig();
         config = this.getConfig();
@@ -52,9 +52,9 @@ public final class Main extends JavaPlugin {
         String version = plugin.getDescription().getVersion();
         JenkinsUpdater updater = new JenkinsUpdater("https://ci.elliotnash.org/job/Minecraft/job/ChestLocker", version);
         if (updater.shouldUpdate) {
-            this.getLogger().info("You are running an outdated version of ChestLocker");
-            this.getLogger().info("Current version: "+updater.currentVersion+", latest version: "+updater.latestVersion);
-            this.getLogger().info("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
+            logger.info("You are running an outdated version of ChestLocker");
+            logger.info("Current version: "+updater.currentVersion+", latest version: "+updater.latestVersion);
+            logger.info("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
         }
     }
 
