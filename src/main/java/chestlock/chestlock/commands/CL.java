@@ -178,7 +178,7 @@ public class CL implements TabExecutor {
     }
 
     public static void listPlayers(CommandSender sender){
-        System.out.println(Main.chestManager.getMap());
+
         if (sender instanceof Player) {
             Player player = (Player) sender;
             Block block = player.getTargetBlock(10);

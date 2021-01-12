@@ -209,10 +209,8 @@ public class CLListener implements Listener {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    System.out.println("RUNNABLE RUNNING");
                     Chest chest = ((Chest) event.getBlock().getState());
                     if (chest.getInventory() instanceof DoubleChestInventory){
-                        System.out.println("IT IS INSTANCE OF IT");
                         DoubleChestInventory dbChest = (DoubleChestInventory) chest.getInventory();
                         Location otherSide;
                         Location invSide = chest.getInventory().getLocation().toBlockLocation();
@@ -224,13 +222,8 @@ public class CLListener implements Listener {
                             otherSide = dbChest.getRightSide().getLocation();
                         }
 
-                        System.out.println(otherSide);
-                        System.out.println(invSide);
-
                         if (Main.chestManager.isLocked(otherSide, false)){
-                            System.out.println("OTHER SIDE IS LOCKED");
                             HashMap<String, LinkedList<String>> tempMap = Main.chestManager.getChest(otherSide, false);
-                            System.out.println(tempMap);
                             Main.chestManager.removeChest(otherSide, false).removeChest(event.getBlock().getLocation(), false);
                             Main.chestManager.setChest(invSide, tempMap, false);
                         }
