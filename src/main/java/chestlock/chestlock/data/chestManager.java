@@ -87,7 +87,7 @@ public class chestManager {
         String worldName = getWorldName(location);
         String chestLocation = getXYZ(location);
 
-        if (!chestMap.containsKey(worldName) || !chestMap.get(worldName).containsKey(chestLocation)){
+        if (!chestMap.containsKey(worldName) || !chestMap.get(worldName).containsKey(chestLocation) && !chestMap.get(worldName).get(chestLocation).containsKey(permissionLevel)){
             return new LinkedList<>();
         }
         return chestMap.get(worldName).get(chestLocation).get(permissionLevel);
