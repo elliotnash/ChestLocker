@@ -1,4 +1,4 @@
-package chestlock.chestlock.data;
+package org.elliotnash.chestlocker.data;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -9,13 +9,13 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Chest;
 import org.bukkit.inventory.DoubleChestInventory;
+import org.elliotnash.chestlocker.Main;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -284,63 +284,13 @@ public class chestManager {
 
     //gets true block of double chest
     private Location getDoubleChestLocation(Location location){
-        if (canBeDouble(location.getBlock().getType())) {
+        if (Main.materialUtils.canBeDouble(location.getBlock().getType())) {
             Chest chest = ((Chest) location.getBlock().getState());
             if (chest.getInventory() instanceof DoubleChestInventory){
                 return chest.getInventory().getLocation();
             }
         }
         return location;
-    }
-
-
-    public boolean isLockable(Material mat){
-        return mat == Material.CHEST
-                || mat == Material.TRAPPED_CHEST
-                || mat == Material.BARREL
-                || mat == Material.FURNACE
-                || mat == Material.DISPENSER
-                || mat == Material.SMOKER
-                || mat == Material.BLAST_FURNACE
-                || mat == Material.DROPPER
-                || mat == Material.BREWING_STAND
-                || mat == Material.HOPPER
-                || mat == Material.BEACON
-                || mat == Material.ENDER_CHEST
-                || isShulker(mat);
-    }
-
-    public boolean isShulker(Material mat){
-        return mat == Material.SHULKER_BOX
-                || mat == Material.BLACK_SHULKER_BOX
-                || mat == Material.BLUE_SHULKER_BOX
-                || mat == Material.BROWN_SHULKER_BOX
-                || mat == Material.CYAN_SHULKER_BOX
-                || mat == Material.GRAY_SHULKER_BOX
-                || mat == Material.GREEN_SHULKER_BOX
-                || mat == Material.LIGHT_BLUE_SHULKER_BOX
-                || mat == Material.LIGHT_GRAY_SHULKER_BOX
-                || mat == Material.LIME_SHULKER_BOX
-                || mat == Material.MAGENTA_SHULKER_BOX
-                || mat == Material.ORANGE_SHULKER_BOX
-                || mat == Material.PINK_SHULKER_BOX
-                || mat == Material.PURPLE_SHULKER_BOX
-                || mat == Material.RED_SHULKER_BOX
-                || mat == Material.WHITE_SHULKER_BOX
-                || mat == Material.YELLOW_SHULKER_BOX;
-    }
-
-    public boolean canBeDouble(Material mat){
-        return mat == Material.CHEST
-                || mat == Material.TRAPPED_CHEST;
-    }
-
-    public boolean isDrainable(Material mat){
-        return mat == Material.CHEST
-                || mat == Material.TRAPPED_CHEST
-                || mat == Material.BARREL
-                || mat == Material.DISPENSER
-                || mat == Material.DROPPER;
     }
 
 }

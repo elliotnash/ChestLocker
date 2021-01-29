@@ -1,4 +1,4 @@
-package chestlock.chestlock;
+package org.elliotnash.chestlocker;
 
 public class Vars {
     public enum ThreeState {

@@ -1,6 +1,4 @@
-package chestlock.chestlock.data;
-
-import com.google.gson.annotations.SerializedName;
+package org.elliotnash.chestlocker.data;
 
 //Public enums for chest owner vs user
 public class Perms {

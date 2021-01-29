@@ -1,6 +1,6 @@
 name: ChestLock
 version: ${jenkins.buildNumber}
-main: chestlock.chestlock.Main
+main: org.elliotnash.chestlocker.Main
 api-version: 1.13
 authors: [Elliot]
 description: Lock chests with a simple click

@@ -1,16 +1,14 @@
-package chestlock.chestlock;
+package org.elliotnash.chestlocker;
 
-import chestlock.chestlock.data.Perms;
+import org.elliotnash.chestlocker.data.Perms;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
-import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -18,12 +16,12 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.DoubleChestInventory;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
-import java.time.LocalDate;
 import java.util.*;
 
-import static chestlock.chestlock.commands.CL.hasAdminPerms;
-import static chestlock.chestlock.commands.CL.shouldBypass;
+import static org.elliotnash.chestlocker.commands.CL.hasAdminPerms;
+import static org.elliotnash.chestlocker.commands.CL.shouldBypass;
 import static org.bukkit.Bukkit.getOfflinePlayer;
 
 public class CLListener implements Listener {
@@ -35,7 +33,7 @@ public class CLListener implements Listener {
     @EventHandler
     public void OnBlockUseEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
-        if (clickedBlock!=null && Main.chestManager.isLockable(clickedBlock.getType())) {
+        if (clickedBlock!=null && Main.materialUtils.isLockable(clickedBlock.getType())) {
             Location clickedLocation = clickedBlock.getLocation();
 
             Player player = event.getPlayer();
@@ -109,7 +107,7 @@ public class CLListener implements Listener {
         Block blockPlaced = event.getBlock();
         if (blockPlaced.getType()==(Material.HOPPER)){
             Block aboveBlock = blockPlaced.getLocation().add(0,1,0).getBlock();
-            if (Main.chestManager.isLockable(aboveBlock.getType())){
+            if (Main.materialUtils.isLockable(aboveBlock.getType())){
                 if (Main.chestManager.isLocked(aboveBlock.getLocation())) {
                     if (!Main.chestManager.containsUUID(aboveBlock.getLocation(), event.getPlayer().getUniqueId().toString(), Perms.ADMIN)) {
                         event.setCancelled(true);
@@ -123,7 +121,7 @@ public class CLListener implements Listener {
     }
     @EventHandler
     public void OnBreakEvent(BlockBreakEvent event){
-        if (Main.chestManager.isLockable(event.getBlock().getType())){
+        if (Main.materialUtils.isLockable(event.getBlock().getType())){
             if (Main.chestManager.isLocked(event.getBlock().getLocation())) {
                 if (!(Main.chestManager.containsUUID(event.getBlock().getLocation(), event.getPlayer().getUniqueId().toString(), Perms.ADMIN)
                         || shouldBypass(event.getPlayer()))) {
@@ -133,7 +131,7 @@ public class CLListener implements Listener {
                 } else {
                     //This is neccessary because of how fucking stupidly double chests are coded in minecraft.
                     //When a double chest is broken it will get the other side and copy the data to that side.
-                    if (Main.chestManager.canBeDouble(event.getBlock().getType())) {
+                    if (Main.materialUtils.canBeDouble(event.getBlock().getType())) {
                         Chest chest = ((Chest) event.getBlock().getState());
                         if (chest.getInventory() instanceof DoubleChestInventory) {
                             DoubleChestInventory dbChest = (DoubleChestInventory) chest.getInventory();
@@ -174,14 +172,9 @@ public class CLListener implements Listener {
     }
 
     public boolean shouldExplode(Block block){
-        if (Main.chestManager.isLockable(block.getType()))
+        if (Main.materialUtils.isLockable(block.getType()))
             return Main.chestManager.isLocked(block.getLocation());
         return false;
-    }
-
-    @EventHandler
-    public void onItemDropEvent(BlockDropItemEvent event){
-
     }
 
     @EventHandler
@@ -191,7 +184,7 @@ public class CLListener implements Listener {
             if (loc == null)
                 return;
             Block lockedBlock = loc.getBlock();
-            if (Main.chestManager.isLockable(lockedBlock.getType())){
+            if (Main.materialUtils.isLockable(lockedBlock.getType())){
                 if (Main.chestManager.isLocked(loc)) {
                     event.setCancelled(true);
                 }
@@ -205,7 +198,7 @@ public class CLListener implements Listener {
         if (Main.chestManager.isLocked(event.getBlock().getLocation())) {
             Main.chestManager.removeChest(event.getBlock().getLocation());
         }
-        if (Main.chestManager.canBeDouble(event.getBlock().getType()))
+        if (Main.materialUtils.canBeDouble(event.getBlock().getType()))
             new BukkitRunnable() {
                 @Override
                 public void run() {

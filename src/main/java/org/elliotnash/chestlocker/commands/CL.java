@@ -1,17 +1,15 @@
-package chestlock.chestlock.commands;
+package org.elliotnash.chestlocker.commands;
 
 import java.util.*;
 
-import chestlock.chestlock.Main;
-import chestlock.chestlock.data.Perms;
+import org.elliotnash.chestlocker.Main;
+import org.elliotnash.chestlocker.data.Perms;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +18,6 @@ import static org.bukkit.Bukkit.*;
 public class CL implements TabExecutor {
     public static String adminPerm = "chestlock.admin";
     public static String lockPerm = "chestlock.lock";
-    private static final NamespacedKey BypassKey = new NamespacedKey(Main.getPlugin(), "BYPASS");
     private static final List<String> COMMANDS = Arrays.asList("add", "remove", "list");
     private static final List<String> OPCOMMANDS = Arrays.asList("add", "remove", "list", "bypass");
     private static final List<String> BLANK = Collections.emptyList();
@@ -39,8 +36,8 @@ public class CL implements TabExecutor {
                 if (args[0].equalsIgnoreCase("bypass")) {
                     return BLANK;
                 }
-                Block block = ((Player)sender).getTargetBlock(10);
-                if (args[0].equalsIgnoreCase("add")&&block!=null&&Main.chestManager.isLockable(block.getType())
+                Block block = ((Player)sender).getTargetBlock(null, 10);
+                if (args[0].equalsIgnoreCase("add")&&block!=null&&Main.materialUtils.isLockable(block.getType())
                         &&(Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)
                         || !Main.chestManager.isLocked(block.getLocation()))){
 
@@ -51,22 +48,22 @@ public class CL implements TabExecutor {
                     }
                     return StringUtil.copyPartialMatches(args[1], playerNames, new ArrayList<>());
                 }
-                if (args[0].equalsIgnoreCase("remove")&&block!=null&&Main.chestManager.isLockable(block.getType())
+                if (args[0].equalsIgnoreCase("remove")&&block!=null&&Main.materialUtils.isLockable(block.getType())
                         && Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)){
 
                     List<String> memberUUIDs = Main.chestManager.getUUIDs(block.getLocation(), Perms.MEMBER);
                     List<String> playerNames = new LinkedList<>();
                     for (String uuid : memberUUIDs){
-                        playerNames.add(Bukkit.getOfflinePlayer(uuid).getName());
+                        playerNames.add(Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName());
                     }
                     playerNames.add("owner");
                     return StringUtil.copyPartialMatches(args[1], playerNames, new ArrayList<>());
                 }
             }
             if (args.length == 3){
-                Block block = ((Player)sender).getTargetBlock(10);
+                Block block = ((Player)sender).getTargetBlock(null, 10);
                 if (args[1].equalsIgnoreCase("owner")&&args[0].equalsIgnoreCase("add")&&block!=null
-                        && Main.chestManager.isLockable(block.getType())&&(Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)
+                        && Main.materialUtils.isLockable(block.getType())&&(Main.chestManager.containsUUID(block.getLocation(), ((Player) sender).getUniqueId().toString(), Perms.ADMIN)
                         || !Main.chestManager.isLocked(block.getLocation()))){
 
                     List<String> playerNames = new LinkedList<>();
@@ -75,12 +72,12 @@ public class CL implements TabExecutor {
                     }
                     return StringUtil.copyPartialMatches(args[2], playerNames, new ArrayList<>());
                 }
-                if (args[1].equalsIgnoreCase("owner")&&block!=null&&Main.chestManager.isLockable(block.getType())&&args[0].equalsIgnoreCase("remove")){
+                if (args[1].equalsIgnoreCase("owner")&&block!=null&&Main.materialUtils.isLockable(block.getType())&&args[0].equalsIgnoreCase("remove")){
                     List<String> ownerUUIDS = Main.chestManager.getUUIDs(block.getLocation(), Perms.ADMIN);
                     if (ownerUUIDS.contains(((Player) sender).getUniqueId().toString())) {
                         List<String> playerNames = new LinkedList<>();
                         for (String uuid : ownerUUIDS) {
-                            playerNames.add(Bukkit.getOfflinePlayer(uuid).getName());
+                            playerNames.add(Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName());
                         }
                         return StringUtil.copyPartialMatches(args[2], playerNames, new ArrayList<>());
                     } else return BLANK;
@@ -135,8 +132,8 @@ public class CL implements TabExecutor {
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
 
-            Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.chestManager.isLockable(block.getType())) {
+            Block block = playerSender.getTargetBlock(null, 10);
+            if (block != null && Main.materialUtils.isLockable(block.getType())) {
                 if (!Main.chestManager.isLocked(block.getLocation())) {
                     Main.chestManager.addUUID(block.getLocation(), playerSender.getUniqueId().toString(), Perms.ADMIN);
                     playerSender.sendMessage(Main.LOCK_SUCCESS);
@@ -155,8 +152,8 @@ public class CL implements TabExecutor {
         if (sender instanceof Player) {
             Player playerSender = (Player) sender;
 
-            Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.chestManager.isLockable(block.getType())) {
+            Block block = playerSender.getTargetBlock(null, 10);
+            if (block != null && Main.materialUtils.isLockable(block.getType())) {
                 //List<UUID> ownerUUIDs = DataManager.getOwnerUUIDS(block);
                 if (Main.chestManager.isLocked(block.getLocation())){
                     if (Main.chestManager.containsUUID(block.getLocation(), playerSender.getUniqueId().toString(), Perms.ADMIN)){
@@ -181,8 +178,8 @@ public class CL implements TabExecutor {
 
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            Block block = player.getTargetBlock(10);
-            if (block != null && Main.chestManager.isLockable(block.getType())
+            Block block = player.getTargetBlock(null, 10);
+            if (block != null && Main.materialUtils.isLockable(block.getType())
                     && (Main.chestManager.containsUUID(block.getLocation(), player.getUniqueId().toString(), Perms.MEMBER)
                     || hasAdminPerms(player) )) {
 
@@ -245,8 +242,8 @@ public class CL implements TabExecutor {
                 return;
             }
 
-            Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.chestManager.isLockable(block.getType())) {
+            Block block = playerSender.getTargetBlock(null, 10);
+            if (block != null && Main.materialUtils.isLockable(block.getType())) {
                 if ((Main.chestManager.containsUUID(block.getLocation(), playerSender.getUniqueId().toString(), Perms.ADMIN)
                         || shouldBypass(playerSender))) {
                     //do chest locking stuff
@@ -286,8 +283,8 @@ public class CL implements TabExecutor {
                 return;
             }
 
-            Block block = playerSender.getTargetBlock(10);
-            if (block != null && Main.chestManager.isLockable(block.getType())){
+            Block block = playerSender.getTargetBlock(null, 10);
+            if (block != null && Main.materialUtils.isLockable(block.getType())){
                 if (Main.chestManager.containsUUID(block.getLocation(), playerSender.getUniqueId().toString(), permissionLevel)
                         || shouldBypass(playerSender)){
 
@@ -319,25 +316,22 @@ public class CL implements TabExecutor {
         }
     }
 
+    public static HashMap<UUID, Boolean> bypassedPlayers = new HashMap<UUID, Boolean>();
+
     public static boolean toggleBypass(CommandSender sender){
         if (sender instanceof Player) {
             Player player = (Player) sender;
             if (hasAdminPerms(player)) {
-                Block block = player.getTargetBlock(10);
-                PersistentDataContainer container = player.getPersistentDataContainer();
-                Integer bypass = container.get(BypassKey, PersistentDataType.INTEGER);
-                if (bypass!=null) {
-                    if (bypass == 0) {
-                        container.set(BypassKey, PersistentDataType.INTEGER, 1);
-                        player.sendMessage(ChatColor.DARK_AQUA + "You are now bypassing chest protection");
-                    } else {
-                        container.set(BypassKey, PersistentDataType.INTEGER, 0);
-                        player.sendMessage(ChatColor.DARK_AQUA + "You are no longer bypassing chest protection");
-                    }
-                } else {
-                    container.set(BypassKey, PersistentDataType.INTEGER, 1);
+                boolean bypass = bypassedPlayers.containsKey(player.getUniqueId()) ? bypassedPlayers.get(player.getUniqueId()) : false;
+                
+                if (!bypass) {
+                    bypass = true;
                     player.sendMessage(ChatColor.DARK_AQUA + "You are now bypassing chest protection");
+                } else {
+                    bypass = false;
+                    player.sendMessage(ChatColor.DARK_AQUA + "You are no longer bypassing chest protection");
                 }
+                bypassedPlayers.put(player.getUniqueId(), bypass);
                 return true;
             }
         } else {
@@ -347,10 +341,9 @@ public class CL implements TabExecutor {
     }
 
     public static boolean shouldBypass(Player player){
-        PersistentDataContainer container = player.getPersistentDataContainer();
         if (hasAdminPerms(player)) {
-            Integer bypass = container.get(BypassKey, PersistentDataType.INTEGER);
-            if (bypass!=null && bypass == 1) {
+            boolean bypass = bypassedPlayers.containsKey(player.getUniqueId()) ? bypassedPlayers.get(player.getUniqueId()) : false;
+            if (bypass) {
                 player.sendMessage(ChatColor.DARK_PURPLE+"You are bypassing protection");
                 return true;
             } else {

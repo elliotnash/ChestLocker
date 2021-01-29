@@ -1,13 +1,17 @@
-package chestlock.chestlock;
+package org.elliotnash.chestlocker;
 
-import chestlock.chestlock.data.chestManager;
-import chestlock.chestlock.commands.CL;
+import org.elliotnash.chestlocker.data.chestManager;
+import org.elliotnash.chestlocker.commands.CL;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.elliotnash.JenkinsUpdater;
+import org.elliotnash.chestlocker.materialutils.MaterialUtils;
+import org.elliotnash.chestlocker.materialutils.Materials12;
+import org.elliotnash.chestlocker.materialutils.Materials13;
+import org.elliotnash.chestlocker.materialutils.Materials14;
 
 import java.util.logging.Logger;
 
@@ -19,6 +23,7 @@ public final class Main extends JavaPlugin {
     private static Main plugin;
     private static Logger logger;
     public static final chestManager chestManager = new chestManager();
+    public static MaterialUtils materialUtils;
 
     @Override
     public void onEnable() {
@@ -40,6 +45,29 @@ public final class Main extends JavaPlugin {
 
         //Command initialization
         this.getCommand("cl").setExecutor(new CL());
+
+        //initialize MaterialUtils
+        try{
+            Material.class.getDeclaredField("BARREL");
+            System.out.println("1.14+");
+            //has BARREL so 1.14+
+            materialUtils = new Materials14();
+        } catch (NoSuchFieldException e){
+            
+            try {
+                Material.class.getDeclaredField("SHULKER_BOX");
+                //has normal shulker so 1.13
+                System.out.println("1.13");
+                materialUtils = new Materials13();
+            } catch (NoSuchFieldException e2){
+                //ahhah 1.12
+                System.out.println("1.12");
+                materialUtils = new Materials12();
+            }
+
+
+            
+        }
 
 
     }
