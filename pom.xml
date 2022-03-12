@@ -99,10 +99,5 @@
             <version>1.0.4</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>org.elliotnash</groupId>
-            <artifactId>JenkinsUpdater</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 </project>

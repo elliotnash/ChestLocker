@@ -7,7 +7,6 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.elliotnash.JenkinsUpdater;
 import org.elliotnash.chestlocker.materialutils.MaterialUtils;
 import org.elliotnash.chestlocker.materialutils.Materials12;
 import org.elliotnash.chestlocker.materialutils.Materials13;
@@ -31,9 +30,6 @@ public final class Main extends JavaPlugin {
         plugin = this;
         logger = getLogger();
 
-        //update check
-        updateCheck();
-
         //load json for chestMap
         chestManager.loadJson();
 
@@ -49,7 +45,7 @@ public final class Main extends JavaPlugin {
         //initialize MaterialUtils
         try{
             Material.class.getDeclaredField("BARREL");
-            System.out.println("1.14+");
+            logger.info("Loading ChestLocker for 1.14+");
             //has BARREL so 1.14+
             materialUtils = new Materials14();
         } catch (NoSuchFieldException e){
@@ -57,16 +53,13 @@ public final class Main extends JavaPlugin {
             try {
                 Material.class.getDeclaredField("SHULKER_BOX");
                 //has normal shulker so 1.13
-                System.out.println("1.13");
+                logger.info("Loading ChestLocker for 1.13");
                 materialUtils = new Materials13();
             } catch (NoSuchFieldException e2){
                 //ahhah 1.12
-                System.out.println("1.12");
+                logger.info("Loading ChestLocker for 1.12");
                 materialUtils = new Materials12();
             }
-
-
-            
         }
 
 
@@ -75,24 +68,6 @@ public final class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-    }
-
-    private void updateCheck(){
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                String version = plugin.getDescription().getVersion();
-                JenkinsUpdater updater = new JenkinsUpdater("https://ci.elliotnash.org/job/Minecraft/job/ChestLocker", version);
-                if (updater.shouldUpdate) {
-                    int versionDiff = updater.latestVersion - updater.currentVersion;
-                    if (versionDiff == 1)
-                        logger.warning("ChestLocker is 1 version behind");
-                    else
-                        logger.warning("ChestLocker is " + versionDiff + " versions behind");
-                    logger.warning("Please download a new build from https://ci.elliotnash.org/job/Minecraft/job/ChestLocker/");
-                }
-            }
-        }.runTaskLaterAsynchronously(this, 100);
     }
 
     public static void log(String toLog){ logger.info(toLog); }
